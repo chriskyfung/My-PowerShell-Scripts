@@ -14,17 +14,17 @@
   None
   
 .NOTES
-  Version:        1.1.2
+  Version:        1.1.3
   Author:         chriskyfung
   Website:        https://chriskyfung.github.io
   Creation Date:  2023-03-09
-  Last Modified:  2023-05-18
+  Last Modified:  2023-07-01
 #>
 
 Try {
 
   # Disable all Virtual Ethernet Adapters except the Virtual Ethernet Adapter for BlueStacks
-  Get-NetAdapter -Name "vEthernet *" | where Name -inotmatch "BluestacksNxt" | Disable-NetAdapter -Confirm:$false
+  Get-NetAdapter -Name "vEthernet *" | Where-Object Name -inotmatch "BluestacksNxt" | Disable-NetAdapter -Confirm:$false
   # Ensure the Virtual Ethernet Adapter for BlueStacks is active
   Enable-NetAdapter -Name "vEthernet (BluestacksNxt)"
 
@@ -41,7 +41,7 @@ Try {
   Set-NetAdapterRss -Name "vEthernet (BluestacksNxt)" -NumberOfReceiveQueues 1 -Profile "NUMAStatic" -MaxProcessorNumber 3 -MaxProcessors 4
 
   # List all acitve network adapters
-  (Get-NetAdapter | where status -eq "up" | Format-List -Property Name, InterfaceDescription, Status | Out-String).TrimEnd()
+  (Get-NetAdapter | Where-Object status -eq "up" | Format-List -Property Name, InterfaceDescription, Status | Out-String).TrimEnd()
 
   Write-Host "`nvEthernet (BluestacksNxt) - Large Send Offload (LSO):`n"
   (Get-NetAdapterLso -Name "vEthernet (BluestacksNxt)" | Format-List -Property "*Enabled" | Out-String).Trim()
