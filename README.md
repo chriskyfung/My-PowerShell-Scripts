@@ -38,70 +38,25 @@ You may need to change the execution policy of PowerShell to allow running scrip
 
 For more details on how to utilize the scripts for a particular application, you can review the README files in the relevant folder.
 
-## Debug
+## Testing
 
-If you are using Windows 10, it comes with PowerShell 5.1 and Pester 3.4, a testing framework for PowerShell scripts and modules.
+This project uses Pester for testing and PSScriptAnalyzer for static analysis. A `Build.ps1` script is provided to automate this process.
 
-- Check the version of PowerShell and Pester you are using on your system by running the following commands in a PowerShell console:
+### Automated Build and Test
 
-  ```ps
-  # Get the PowerShell version
-  $PSVersionTable.PSVersion
-  # Get the Pester version
-  Get-Module -Name Pester -ListAvailable
-  ```
+To run the build script, which includes PSScriptAnalyzer and Pester tests, open a PowerShell terminal in the root of the project and execute the following command:
 
-For some situations, you might need to upgrade to Pester 5 or later:
+```powershell
+.\Build.ps1
+```
 
-- You need to run tests on PowerShell Core or PowerShell 7, which are not fully supported by Pester 4 or earlier versions.
-- You want to use the new syntax features, such as `-ForEach` and `-TestCases` parameters, that simplify writing parameterized tests.
-- You want to take advantage of the improved performance, discovery, and output of Pester 5, which uses a new test runner and reporter.
-- You need to use advanced features, such as code coverage, mocking, or configuration, that have been enhanced or redesigned in Pester 5.
-- You want to benefit from the ongoing development and support of Pester 5, which is the main focus of the Pester team and community.
+### Debugging in Visual Studio Code
 
-Here are some instructions on how to use Pester, a testing framework for PowerShell, to debug the scripts in this repository.
+To debug in Visual Studio Code, set a breakpoint in your script or test file, then open the **Run and Debug** view (Ctrl+Shift+D). From the dropdown menu, select one of the following configurations and press <kbd>F5</kbd> to start debugging:
 
-- To upgrade to Pester 5 or later, you can follow these steps:
-
-  1. If you have an older version of Pester installed, uninstall it by running:
-  
-     ```ps
-     Uninstall-Module -Name Pester -Force
-     ```
-
-  2. Install the latest version of Pester by running:
-  
-     ```ps
-     Install-Module -Name Pester -Force -SkipPublisherCheck
-     ```
-
-  3. Verify that the installation was successful by running `Get-Module -ListAvailable Pester` again.
-
-- To run all the tests in the repository, navigate to the root folder and run:
-
-  ```ps
-  Invoke-Pester
-  ```
-
-- To run a specific test file, use the `-Script` parameter:
-
-  ```ps
-  Invoke-Pester -Script .\Tests\MyTest.Tests.ps1
-  ```
-
-- To run a specific test case, use the `-TestName` parameter:
-
-  ```ps
-  Invoke-Pester -TestName 'My test case'
-  ```
-
-- To generate a test report in XML format, use the `-OutputFile` and `-OutputFormat` parameters:
-
-  ```ps
-  Invoke-Pester -OutputFile .\TestResults.xml -OutputFormat NUnitXml
-  ```
-
-- To debug a test case in Visual Studio Code, set a breakpoint in the test file and press <kbd>F5</kbd> to start debugging.
+-   **PowerShell: Launch Current File**: Runs the currently open PowerShell script.
+-   **PowerShell: Run Pester Tests**: Runs all Pester tests in the project.
+-   **PowerShell: Run Pester Test in Current File**: Runs the Pester tests located in the currently open test file.
 
 For more information on Pester, visit the official documentation: <https://pester.dev/docs/quick-start> .
 

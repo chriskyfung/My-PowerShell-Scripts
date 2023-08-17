@@ -66,6 +66,7 @@ All PowerShell scripts **MUST** include a comment-based help header with the fol
 - All new scripts **MUST** be accompanied by Pester tests.
 - Any modifications to existing scripts **MUST** include corresponding updates to the tests.
 - All tests **MUST** pass before a commit is made.
+- A `Build.ps1` script is provided to automate the process of running Pester tests and PSScriptAnalyzer.
 
 ### 3.5. Git Commit Conventions
 
