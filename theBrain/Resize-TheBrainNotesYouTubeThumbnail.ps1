@@ -9,27 +9,18 @@
   None
 
 .NOTES
-  Version:        1.1.3
+  Version:        1.1.4
   Author:         chriskyfung
   Website:        https://chriskyfung.github.io
   Creation Date:  2023-04-28
-  Last Modified:  2023-11-09
+  Last Modified:  2023-11-10
 #>
 
 # Enable Verbose output
 [CmdletBinding()]
 
-# Get the path from environment variable or the default location '<User>\My Documents\Brains'
-$BrainFolder = Get-Variable -Name BrainFolder -ValueOnly -ErrorAction Ignore
-if ($null -eq $BrainFolder) {
-  $BrainFolder = Join-Path -Path ([Environment]::GetFolderPath('MyDocuments')) -ChildPath 'Brains'
-}
-# Check if the folder exists
-if (-not (Test-Path -Path $BrainFolder)) {
-  Write-Error "Files not found. The folder '$BrainFolder' doesn't exist." -Category ObjectNotFound -ErrorAction Stop
-}
-
-# Look up the Notes.md files that locate under the specific folder and contain the YouTube thumbnail URLs.
+# Look up the Notes.md files that locate under the Brain data folder and contain the YouTube thumbnail URLs.
+$BrainFolder = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
 $MatchInfo = Get-ChildItem -Path $BrainFolder -Filter 'Notes.md' -Recurse | Select-String '\/(hq|maxres)default.jpg\)' -List
 
 # For each matching result

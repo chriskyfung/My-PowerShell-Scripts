@@ -9,24 +9,15 @@
   None
 
 .NOTES
-  Version:        1.1.2
+  Version:        1.1.3
   Author:         chriskyfung
   Website:        https://chriskyfung.github.io
   Creation Date:  2023-05-25
-  Last Modified:  2023-11-09
+  Last Modified:  2023-11-10
 #>
 
-# Get the path from environment variable or the default location '<User>\My Documents\Brains'
-$BrainFolder = Get-Variable -Name BrainFolder -ValueOnly -ErrorAction Ignore
-if ($null -eq $BrainFolder) {
-  $BrainFolder = Join-Path -Path ([Environment]::GetFolderPath('MyDocuments')) -ChildPath 'Brains'
-}
-# Check if the folder exists
-if (-not (Test-Path -Path $BrainFolder)) {
-  Write-Error "Files not found. The folder '$BrainFolder' doesn't exist." -Category ObjectNotFound -ErrorAction Stop
-}
-
-# Look up markdown links within the Notes.md files that locate under under the specific folder
+# Look up markdown links within the Notes.md files that locate under the Brain data folder
+$BrainFolder = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
 $MatchInfo = Get-ChildItem -Path $BrainFolder -Filter 'Notes.md' -Recurse | Select-String -Pattern '(?!-\{)\[([^\]]+)\]\((https?://[^()]+)\)(?!}-)' -AllMatches
 $LinkList =  $MatchInfo | Select-Object *, @{Name="MarkdownLink"; Expression={$_.Matches.Value}}, @{Name="LinkText"; Expression={$_.Matches.Groups[1].Value}} , @{Name="URL"; Expression={$_.Matches.Groups[2].Value}}
 
