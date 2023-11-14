@@ -9,17 +9,17 @@
   None
 
 .NOTES
-  Version:        1.0.0
+  Version:        1.0.1
   Author:         chriskyfung
   Website:        https://chriskyfung.github.io
-  Creation Date:  2023-06-24
-  Last Modified:  2023-06-24
 #>
 
+#Requires -Version 3.0
+#Requires -PSEdition Desktop
 #Requires -RunAsAdministrator
 
 Get-Disk | ForEach-Object {
-  ($Disk = $_) | Get-StorageReliabilityCounter | 
+  ($Disk = $_) | Get-StorageReliabilityCounter |
       Select-Object DeviceId,
                     @{
                       Name="FriendlyName";

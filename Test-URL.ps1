@@ -1,3 +1,5 @@
+#Requires -Version 3.0
+
 $urls = @("https://www.google.com", "https://www.bing.com", "https://www.yahoo.com", "https://www.example.com")
 
 foreach ($url in $urls) {

@@ -1,5 +1,3 @@
-#Requires -RunAsAdministrator
-
 <#
 .SYNOPSIS
   Optimize Virtual Ethernet Adapter Performance for BlueStacks with Hyper-V Enabled
@@ -12,14 +10,16 @@
 
 .OUTPUTS
   None
-  
+
 .NOTES
-  Version:        1.1.3
+  Version:        1.1.4
   Author:         chriskyfung
-  Website:        https://chriskyfung.github.io
-  Creation Date:  2023-03-09
-  Last Modified:  2023-07-01
+  Original from:  https://gist.github.com/chriskyfung/073e0fbfeeb7b5c1e7d13dc94d638bb9
 #>
+
+#Requires -Version 3.0
+#Requires -PSEdition Desktop
+#Requires -RunAsAdministrator
 
 Try {
 
@@ -34,7 +34,7 @@ Try {
   Disable-NetAdapterRss -Name "vEthernet (*)"
   # Disable Receive segment coalescing (RSC) for all Virtual Ethernet Adapters. Learn more: https://learn.microsoft.com/en-us/windows-hardware/drivers/network/overview-of-receive-segment-coalescing
   Disable-NetAdapterRsc -Name "vEthernet (*)"
-  
+
   # Disable specific adapter bindings on vEthernet (BluestacksNxt). Learn more: https://learn.microsoft.com/en-us/powershell/module/netadapter/disable-netadapterbinding
   Disable-NetAdapterBinding -Name "vEthernet (BluestacksNxt)" -ComponentID @("ms_tcpip6", "ms_server", "ms_lltdio", "ms_rspndr")
   # Set Sets the RSS properties on vEthernet (BluestacksNxt). Learn more: https://learn.microsoft.com/en-us/powershell/module/netadapter/set-netadapterrss
@@ -51,7 +51,7 @@ Try {
 
   Write-Host "`nvEthernet (BluestacksNxt) - Receive Segment Coalescing (RSC):`n"
   (Get-NetAdapterRsc -Name "vEthernet (BluestacksNxt)" | Format-List -Property "*Enabled" | Out-String).Trim()
-  
+
   Write-Host "`n"
 
 } Catch {
