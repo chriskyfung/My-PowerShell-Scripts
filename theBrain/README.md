@@ -13,8 +13,9 @@ This folder contains some PowerShell scripts that can interact with [TheBrain](h
 
 ## Requirements
 
--   PowerShell 5.1 or higher
--   TheBrain 13 or higher
+- PowerShell 5.1 or higher (Recommended)
+- PSSQLite module (1.1.0 or later)
+- TheBrain 13 for Windows
 
 ## Installation
 To use the scripts in this repository, follow these steps:
@@ -26,6 +27,20 @@ To use the scripts in this repository, follow these steps:
    ```
 
 2. Navigate to the "theBrain" folder.
+
+3. **Verify the dependencies**: To check if the required module has been installed, you can open your PowerShell terminal and run the following command:
+
+    ```powershell
+    Get-Module -ListAvailable -Name PSSQLite
+    ```
+
+    This command will list all the available versions of the PSSQLite module installed on your system. If it is installed, it will display the version number and other details of the module.
+
+    If PSSQLite is not installed, it will not return any output. You can use the following command to install the PSSQLite 1.1.0 module:
+
+    ```powershell
+    Install-Module -Name PSSQLite -RequiredVersion 1.1.0
+    ```
 
 ## Usage
 Once the repository is cloned and the "theBrain" folder is accessed, you can run the PowerShell scripts by executing the following command in PowerShell:
