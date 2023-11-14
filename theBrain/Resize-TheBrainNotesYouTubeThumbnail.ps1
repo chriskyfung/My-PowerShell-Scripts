@@ -5,8 +5,16 @@
 .DESCRIPTION
   Append `#$width=30p$` to the image address within the Markdown files
 
+.PARAMETER None
+
+.INPUTS
+  None.
+
 .OUTPUTS
   None
+
+.EXAMPLE
+  PS C:\> .\Resize-TheBrainNotesYouTubeThumbnail.ps1
 
 .NOTES
   Version:        1.1.5
