@@ -22,13 +22,13 @@
   This example retrieves the path of the user's Brain data directory.
 
 .NOTES
-  Version:  1.0.0
-  Date:     2023-11-10
+  Version:  1.0.1
   Author:   chriskyfung
   Website:  https://chriskyfung.github.io
 #>
 
-Import-Module PSSQLite
+#Requires -Version 2.0
+#Requires -Modules PSSQLite
 
 $theBrainMetaDatabase = Join-Path $env:LOCALAPPDATA "TheBrain\MetaDB\TheBrainMeta.db"
 $query = "SELECT Value FROM MetaSettings WHERE Name='preferences.userbraindatadirectory'"

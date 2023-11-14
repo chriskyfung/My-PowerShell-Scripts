@@ -9,11 +9,12 @@
   None
 
 .NOTES
-  Version:        1.0.1
+  Version:        1.0.2
   Author:         chriskyfung
   Website:        https://chriskyfung.github.io
-  Creation Date:  2023-07-01
 #>
+
+#Requires -Version 2.0
 
 # Enable Verbose output
 [CmdletBinding()]
