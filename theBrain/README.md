@@ -8,6 +8,7 @@ This folder contains some PowerShell scripts that can interact with [TheBrain](h
 - [Usage](#usage)
 - [Disclaimer](#disclaimer)
 - [Contributing](#contributing)
+- [Credits](#credits)
 - [License](#license)
 
 ## Requirements
@@ -47,6 +48,14 @@ We welcome contributions from the community. To contribute to this project, plea
 4.  Push your changes to your fork.
 5.  Submit a pull request to the main repository.
 
+## Credits
+
+This project uses the following open-source packages:
+
+- [PSSQLite](https://github.com/RamblingCookieMonster/PSSQLite): A PowerShell module to interact with SQLite databases.
+
+This project wouldn't be possible without the hard work and dedication of the contributors to the above projects. We thank them for their contribution to the open source community.
+
 ## License
 
-This project is licensed under the [GNU GPLv3](LICENSE) License. 
+This project is licensed under the [GNU GPLv3](LICENSE) License.
