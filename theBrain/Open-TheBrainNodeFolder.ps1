@@ -8,6 +8,9 @@
 .OUTPUTS
   None
 
+.EXAMPLE
+  PS C:\> .\Open-TheBrainNodeFolder.ps1
+
 .NOTES
   Version:        1.0.2
   Author:         chriskyfung
