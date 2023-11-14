@@ -73,4 +73,4 @@ This project wouldn't be possible without the hard work and dedication of the co
 
 ## License
 
-This project is licensed under the [GNU GPLv3](LICENSE) License.
+The project is licensed under the GPLv3 License. See the [License](/LICENSE) file for details.
