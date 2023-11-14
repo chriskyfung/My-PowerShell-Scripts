@@ -14,6 +14,7 @@
 .NOTES
   Version:        1.1.4
   Author:         chriskyfung
+  License:        GNU GPLv3 license
   Original from:  https://gist.github.com/chriskyfung/073e0fbfeeb7b5c1e7d13dc94d638bb9
 #>
 

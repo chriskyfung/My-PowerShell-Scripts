@@ -11,7 +11,7 @@
 .NOTES
   Version:        1.0.1
   Author:         chriskyfung
-  Website:        https://chriskyfung.github.io
+  License:        GNU GPLv3 license
 #>
 
 #Requires -Version 3.0
