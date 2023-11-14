@@ -9,12 +9,12 @@
   None
 
 .NOTES
-  Version:        1.1.4
+  Version:        1.1.5
   Author:         chriskyfung
   Website:        https://chriskyfung.github.io
-  Creation Date:  2023-04-28
-  Last Modified:  2023-11-10
 #>
+
+#Requires -Version 2.0
 
 # Enable Verbose output
 [CmdletBinding()]
@@ -29,18 +29,19 @@ ForEach ($Match in $MatchInfo) {
   $ParentFolder = Split-Path -Path $FilePath # Path of the parent folder
   # Check if any backup files exist in the parent folder
   $NewIndex = 1
-  if (Test-Path -Path (-join ($FilePath, '.bak*')) -PathType leaf) {
+  if (Test-Path -Path ( -join ($FilePath, '.bak*')) -PathType leaf) {
     # If true then determine the index of the last backup file
     $LastIndex = (Get-ChildItem -Path $ParentFolder -Filter '*.bak*' | Select-Object Extension -Unique |
-                    Sort-Object -Property Extension | Select-Object -Last 1)[0] -replace ('\D*', '')
+      Sort-Object -Property Extension | Select-Object -Last 1)[0] -replace ('\D*', '')
     $NewIndex = [int]$LastIndex
     # If there are more than three backup files
     if ($NewIndex -ge 3) {
       # Remove the first backup file and re-index the rest of the backup files
-      Remove-Item (-join ($FilePath, '.bak1'))
-      Rename-Item (-join ($FilePath, '.bak2')) -NewName (-join ($FilePath, '.bak1'))
-      Rename-Item (-join ($FilePath, '.bak3')) -NewName (-join ($FilePath, '.bak2'))
-    } else {
+      Remove-Item ( -join ($FilePath, '.bak1'))
+      Rename-Item ( -join ($FilePath, '.bak2')) -NewName ( -join ($FilePath, '.bak1'))
+      Rename-Item ( -join ($FilePath, '.bak3')) -NewName ( -join ($FilePath, '.bak2'))
+    }
+    else {
       # Else increment the index for the new backup file
       $NewIndex++
     }
