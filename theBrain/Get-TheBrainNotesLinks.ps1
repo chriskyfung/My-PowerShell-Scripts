@@ -19,7 +19,8 @@
 
 # Look up markdown links within the Notes.md files that locate under the Brain data folder
 $BrainFolder = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
-$MatchInfo = Get-ChildItem -Path $BrainFolder -Filter 'Notes.md' -Recurse | Select-String -Pattern '(?!-\{)\[([^\]]+)\]\((https?://[^()]+)\)(?!}-)' -AllMatches
+$PathToSearch = Get-ChildItem -Directory -Path $BrainFolder -Exclude 'Backup'
+$MatchInfo = Get-ChildItem -Path $PathToSearch -Filter 'Notes.md' -Recurse | Select-String -Pattern '(?!-\{)\[([^\]]+)\]\((https?://[^()]+)\)(?!}-)' -AllMatches
 $LinkList = $MatchInfo | Select-Object *, @{Name = "MarkdownLink"; Expression = { $_.Matches.Value } }, @{Name = "LinkText"; Expression = { $_.Matches.Groups[1].Value } } , @{Name = "URL"; Expression = { $_.Matches.Groups[2].Value } }
 
 # Output the results in DataTable view

@@ -34,6 +34,7 @@ $ErrorActionPreference = "Stop"
 
 # Look up the Notes.md files that locate under the Brain data folder and contain the YouTube thumbnail URLs.
 $BrainFolder = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
+$SubFolders = Get-ChildItem -Directory -Path $BrainFolder -Exclude 'Backup'
 $BackupFolder = Join-Path $BrainFolder 'Backup'
 
 $Filename = 'Notes.md'
@@ -41,7 +42,7 @@ $FilenameWithoutExtension = [System.IO.Path]::GetFileNameWithoutExtension($Filen
 $FileExtension = [System.IO.Path]::GetExtension($Filename)
 
 Write-Host 'Scanning YouTube thumbnail URLs in Brain Notes...'
-$MatchInfo = Get-ChildItem -Path $BrainFolder -Exclude $BackupFolder -Filter $Filename -Recurse | Select-String '\/(hq|maxres)default.jpg\)' -List
+$MatchInfo = Get-ChildItem -Path $SubFolders -Filter $Filename -Recurse | Select-String '\/(hq|maxres)default.jpg\)' -List
 
 # For each matching result
 Write-Information 'Backing up and modifying Brain Notes...'

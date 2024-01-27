@@ -27,6 +27,7 @@
 
 # Look up the Notes.md files that locate under the Brain data folder and contain the YouTube thumbnail URLs.
 $BrainFolder = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
-$Folder = Get-ChildItem -Path $BrainFolder -Filter $NodeId -Recurse
+$PathToSearch = Get-ChildItem -Directory -Path $BrainFolder -Exclude 'Backup'
+$Folder = Get-ChildItem -Path $PathToSearch -Directory -Filter $NodeId -Recurse
 
 explorer.exe $Folder.FullName
