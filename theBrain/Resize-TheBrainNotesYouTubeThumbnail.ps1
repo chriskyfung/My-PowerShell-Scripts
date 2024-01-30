@@ -45,7 +45,7 @@ Write-Host 'Scanning YouTube thumbnail URLs in Brain Notes...'
 $MatchInfo = Get-ChildItem -Path $SubFolders -Filter $Filename -Recurse | Select-String '\/(hq|maxres)default.jpg\)' -List
 
 # For each matching result
-Write-Information 'Backing up and modifying Brain Notes...'
+Write-Host 'Backing up and modifying Brain Notes...'
 ForEach ($Match in $MatchInfo) {
   $FilePath = $Match.Path | Convert-Path # FilePath of the Notes.md file
   $ParentFolder = Split-Path -Path $FilePath -Parent # Path of the parent folder
@@ -62,7 +62,7 @@ ForEach ($Match in $MatchInfo) {
   Write-Verbose "Modified --> '$FilePath'"
 }
 
-Write-Host 'Finished: ' $MatchInfo.Length 'file(s) found' # Output the number of files found
+Write-Host ('Finished: {0} file(s) found' -f $MatchInfo.Length) # Output the number of files found
 
 $MatchInfo | Format-Table Path | Out-Host # Output the path of the files found
 
