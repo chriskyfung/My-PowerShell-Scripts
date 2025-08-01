@@ -1,88 +1,106 @@
-﻿<#
+<#
 .SYNOPSIS
-  Resize YouTube thumbnails in TheBrain Notes.
+  Resizes YouTube thumbnails embedded in TheBrain notes.
 
 .DESCRIPTION
-  Scan all Markdown files in the user's Brain data directory, and apends `#$width=50p$`
-  to the image URL of embedded YouTube thumbnails within the Markdown files, and backs
-  up the original notes to the Backup folder before changing the Markdown file content.
+  This script scans all 'Notes.md' files in the user's TheBrain data directory.
+  It appends a width parameter to the image URL of embedded YouTube thumbnails to control their size.
+  The script backs up the original notes before making any changes.
 
-.PARAMETER None
+.PARAMETER NewWidth
+  The new width (as a percentage) to apply to the thumbnails. Defaults to 50.
 
-.INPUTS
-  None.
+.PARAMETER ImageType
+  Specifies whether to target default thumbnails or already resized ones.
+  - 'default': Finds thumbnails without a width parameter.
+  - 'resized': Finds thumbnails that already have a width parameter.
 
-.OUTPUTS
-  None
+.PARAMETER CurrentWidth
+  When ImageType is 'resized', this specifies the current width of the thumbnails to target.
 
 .EXAMPLE
   PS C:\> .\Resize-TheBrainNotesYouTubeThumbnail.ps1
+  Resizes all default YouTube thumbnails to 50% width.
+
+.EXAMPLE
+  PS C:\> .\Resize-TheBrainNotesYouTubeThumbnail.ps1 -NewWidth 75
+  Resizes all default YouTube thumbnails to 75% width.
+
+.EXAMPLE
+  PS C:\> .\Resize-TheBrainNotesYouTubeThumbnail.ps1 -ImageType resized -CurrentWidth 30 -NewWidth 75
+  Finds all thumbnails currently at 30% width and resizes them to 75%.
+
+.OUTPUTS
+  String. The script outputs status messages and a summary of the files that were modified.
 
 .NOTES
-  Version:        2.1.0
-  Author:         chriskyfung
+  Version:        2.2.0
+  Author:         chriskyfung, Gemini
   License:        GNU GPLv3 license
-  Original from:  https://gist.github.com/chriskyfung/ff65df9a60a7a544ff12aa8f810d728a/
+  Creation Date:  2023-11-14
+  Last Modified:  2025-08-01
 #>
 
 #Requires -Version 2.0
 
-# Enable Verbose output
 [CmdletBinding()]
+param(
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 100)]
+    [int]$NewWidth = 50,
+
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('default', 'resized')]
+    [string]$ImageType = 'default',
+
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 100)]
+    [int]$CurrentWidth = 30
+)
 
 $ErrorActionPreference = "Stop"
 
-<#
-.PARAMETERS
-  Depending on the $ImageType parameter, it either finds the default YouTube
-  thumbnails or the resized ones. If the $ImageType is 'resized', it also takes
-  into account the $CurrentWidth parameter to find thumbnails of a specific width.
-#>
-$ImageType = 'default'  # [ValidateSet('default', 'resized')]
-$CurrentWidth = 30  # [ValidateRange(1,100)]
-$NewWidth = 50  # [ValidateRange(1,100)]
+try {
+    $BrainFolder = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
+    $SubFolders = Get-ChildItem -Directory -Path $BrainFolder -Exclude 'Backup'
+    $BackupFolder = Join-Path $BrainFolder 'Backup'
 
-# Look up the Notes.md files that locate under the Brain data folder and contain the YouTube thumbnail URLs.
-$BrainFolder = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
-$SubFolders = Get-ChildItem -Directory -Path $BrainFolder -Exclude 'Backup'
-$BackupFolder = Join-Path $BrainFolder 'Backup'
+    $Filename = 'Notes.md'
+    $FilenameWithoutExtension = [System.IO.Path]::GetFileNameWithoutExtension($Filename)
+    $FileExtension = [System.IO.Path]::GetExtension($Filename)
 
-$Filename = 'Notes.md'
-$FilenameWithoutExtension = [System.IO.Path]::GetFileNameWithoutExtension($Filename)
-$FileExtension = [System.IO.Path]::GetExtension($Filename)
+    Write-Host 'Scanning YouTube thumbnail URLs in Brain Notes...'
 
-Write-Host 'Scanning YouTube thumbnail URLs in Brain Notes...'
+    if ($ImageType -eq 'default') {
+      $MatchInfo = Get-ChildItem -Path $SubFolders -Filter $Filename -Recurse | Select-String '\/(hq|maxres)default.jpg\)' -List
+    } else {
+      $MatchInfo = Get-ChildItem -Path $SubFolders -Filter $Filename -Recurse | Select-String ('\/(hq|maxres)default.jpg#\$width={0}p\$\)' -f $CurrentWidth) -List
+    }
 
-if ($ImageType -eq 'default') {
-  $MatchInfo = Get-ChildItem -Path $SubFolders -Filter $Filename -Recurse | Select-String '\/(hq|maxres)default.jpg\)' -List
-} else {
-  $MatchInfo = Get-ChildItem -Path $SubFolders -Filter $Filename -Recurse | Select-String ('\/(hq|maxres)default.jpg#\$width={0}p\$\)' -f $CurrentWidth) -List
+    Write-Host 'Backing up and modifying Brain Notes...'
+    ForEach ($Match in $MatchInfo) {
+      $FilePath = $Match.Path | Convert-Path
+      $ParentFolder = Split-Path -Path $FilePath -Parent
+      $Timestamp = (Get-Item $FilePath).LastWriteTime.ToString('yyyyMMdd_HHmmss')
+      $BackupFilename = "$FilenameWithoutExtension-$Timestamp$FileExtension~"
+      $BackupPath = Join-Path $ParentFolder.Replace($BrainFolder, $BackupFolder) $BackupFilename
+      Copy-Item -Path $FilePath -Destination (New-Item -ItemType File -Force -Path $BackupPath) -Force
+      Write-Verbose "Created --> '$BackupPath'"
+
+      $Pattern = $Match.Matches.Value
+      if ($ImageType -eq 'default') {
+        $NewString = $Pattern.Replace(')', ("#`$width={0}p`$)" -f $NewWidth))
+      } else {
+        $NewString = $Pattern.Replace(("#`$width={0}p`$)" -f $CurrentWidth), ("#`$width={0}p`$)" -f $NewWidth))
+      }
+      (Get-Content $FilePath -Encoding UTF8).Replace($Pattern, $NewString) | Set-Content $FilePath -Encoding UTF8
+      Write-Verbose "Modified --> '$FilePath'"
+    }
+
+    Write-Host ('Finished: {0} file(s) found' -f $MatchInfo.Length)
+    $MatchInfo | Format-Table Path | Out-Host
+
+} catch {
+    Write-Error "An error occurred: $($_.Exception.Message)"
+    exit 1
 }
-
-# For each matching result
-Write-Host 'Backing up and modifying Brain Notes...'
-ForEach ($Match in $MatchInfo) {
-  $FilePath = $Match.Path | Convert-Path # FilePath of the Notes.md file
-  $ParentFolder = Split-Path -Path $FilePath -Parent # Path of the parent folder
-  $Timestamp = (Get-Item $FilePath).LastWriteTime.ToString('yyyyMMdd_HHmmss')
-  $BackupFilename = "$FilenameWithoutExtension-$Timestamp$FileExtension~"
-  $BackupPath = Join-Path $ParentFolder.Replace($BrainFolder, $BackupFolder) $BackupFilename
-  # Backup the Notes.md file
-  Copy-Item -Path $FilePath -Destination (New-Item -ItemType File -Force -Path $BackupPath) -Force
-  Write-Verbose "Created --> '$BackupPath'"
-  # Amend the link of the YouTube thumbnail with UTF8 encoding
-  $Pattern = $Match.Matches.Value
-  if ($ImageType -eq 'default') {
-  $NewString = $Pattern.Replace(')', '#$width={0}p$)' -f $NewWidth)
-  } else {
-    $NewString = $Pattern.Replace('#$width=30p$)', '#$width={0}p$)' -f $NewWidth)
-  }
-  (Get-Content $FilePath -Encoding UTF8).Replace($Pattern, $NewString) | Set-Content $FilePath -Encoding UTF8
-  Write-Verbose "Modified --> '$FilePath'"
-}
-
-Write-Host ('Finished: {0} file(s) found' -f $MatchInfo.Length) # Output the number of files found
-
-$MatchInfo | Format-Table Path | Out-Host # Output the path of the files found
-
-Return
