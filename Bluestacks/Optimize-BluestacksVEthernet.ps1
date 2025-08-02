@@ -1,26 +1,37 @@
 <#
 .SYNOPSIS
-  Optimize Virtual Ethernet Adapter Performance for BlueStacks with Hyper-V Enabled
+  Optimizes the "vEthernet (BluestacksNxt)" adapter for BlueStacks performance.
 
 .DESCRIPTION
-  This script will perform the following operations:
-  1. Disable Large Send Offload (LSO), Receive side scaling (RSS) and eceive segment coalescing (RSC) for all Virtual Ethernet Adapters.
-  2. Disable TCP/IPv6, File and Printer Sharing for Microsoft Networks, Link-Layer Topology Discovery Mapper I/O Driver and Link-Layer Topology Discovery Responder for the network adapter named "vEthernet (BluestacksNxt)".
-  3. Set the Receive Side Scaling (RSS) parameters for the network adapter named "vEthernet (BluestacksNxt)", -NumberOfReceiveQueues 1 -Profile "NUMAStatic" -MaxProcessors 4
+  This script optimizes the virtual Ethernet adapter used by BlueStacks when Hyper-V is enabled.
+  It performs the following actions:
+  - Disables other vEthernet adapters.
+  - Disables LSO, RSS, and RSC on all vEthernet adapters.
+  - Disables IPv6 and other unnecessary bindings on the BlueStacks adapter.
+  - Configures RSS settings for the BlueStacks adapter.
+  - Displays the final configuration of the adapter.
+
+.EXAMPLE
+  PS C:\> .\Optimize-BluestacksVEthernet.ps1
+  Runs the optimization script. This script requires administrator privileges.
 
 .OUTPUTS
-  None
+  String. The script outputs the final configuration of the network adapters to the console.
 
 .NOTES
-  Version:        1.1.4
-  Author:         chriskyfung
+  Version:        1.2.0
+  Author:         chriskyfung, Gemini
   License:        GNU GPLv3 license
+  Creation Date:  2023-06-24
+  Last Modified:  2025-08-01
   Original from:  https://gist.github.com/chriskyfung/073e0fbfeeb7b5c1e7d13dc94d638bb9
 #>
 
 #Requires -Version 3.0
 #Requires -PSEdition Desktop
 #Requires -RunAsAdministrator
+
+$ErrorActionPreference = "Stop"
 
 Try {
 
@@ -56,8 +67,7 @@ Try {
   Write-Host "`n"
 
 } Catch {
-
-  Write-Host "An error occurred:"
-  Write-Host $_
-
+    Write-Error "An error occurred during network adapter optimization: $($_.Exception.Message)"
+    # Exit with a non-zero status code to indicate failure
+    exit 1
 }

@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Replaces local YouTube thumbnail links in TheBrain notes with web URLs.
 
