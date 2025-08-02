@@ -24,7 +24,7 @@
 
 $ErrorActionPreference = "Stop"
 
-$urls = @("https://www.google.com", "https://www.bing.com", "https://www.yahoo.com", "https://www.example.com")
+$urls = @("https://www.google.com", "https://www.bing.com", "https://www.yahoo.com", "https://no-such.domain")
 
 foreach ($url in $urls) {
   try {
