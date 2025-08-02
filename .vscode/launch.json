@@ -1,0 +1,38 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "PowerShell: Launch Current File",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${file}",
+      "args": [],
+      "cwd": "${fileDirname}"
+    },
+    {
+      "name": "PowerShell: Run Pester Tests",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "Invoke-Pester",
+      "args": [
+        "-Path",
+        "'${workspaceFolder}'"
+      ],
+      "createTemporaryIntegratedConsole": true
+    },
+    {
+      "name": "PowerShell: Run Pester Test in Current File",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "Invoke-Pester",
+      "args": [
+        "-Script",
+        "'${file}'"
+      ],
+      "createTemporaryIntegratedConsole": true
+    }
+  ]
+}

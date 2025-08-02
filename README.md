@@ -38,6 +38,28 @@ You may need to change the execution policy of PowerShell to allow running scrip
 
 For more details on how to utilize the scripts for a particular application, you can review the README files in the relevant folder.
 
+## Testing
+
+This project uses Pester v5.7.1 for testing and PSScriptAnalyzer for static analysis. A `Build.ps1` script is provided to automate this process.
+
+### Automated Build and Test
+
+To run the build script, which includes PSScriptAnalyzer and Pester tests, open a PowerShell terminal in the root of the project and execute the following command:
+
+```powershell
+.\Build.ps1
+```
+
+### Debugging in Visual Studio Code
+
+To debug in Visual Studio Code, set a breakpoint in your script or test file, then open the **Run and Debug** view (Ctrl+Shift+D). From the dropdown menu, select one of the following configurations and press <kbd>F5</kbd> to start debugging:
+
+-   **PowerShell: Launch Current File**: Runs the currently open PowerShell script.
+-   **PowerShell: Run Pester Tests**: Runs all Pester tests in the project.
+-   **PowerShell: Run Pester Test in Current File**: Runs the Pester tests located in the currently open test file.
+
+For more information on Pester, visit the official documentation: <https://pester.dev/docs/quick-start> .
+
 ## Disclaimer
 
 These scripts are provided as-is, without any warranty or support. Use them at your own risk. I am not responsible for any damage or data loss that may occur from using these scripts. Always backup your data before running any script.

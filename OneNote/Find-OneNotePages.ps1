@@ -38,23 +38,25 @@ function Format-Hyperlink {
     [ValidateNotNullOrEmpty()]
     [Uri] $Uri,
 
-    [Parameter(Mandatory = $false, Position = 1)]
+    [Parameter(Mandatory=$false, Position = 1)]
     [string] $Label
   )
+
+  $e = [char]27
 
   if (($PSVersionTable.PSVersion.Major -lt 6 -or $IsWindows) -and -not $Env:WT_SESSION) {
     # Fallback for Windows users not inside Windows Terminal
     if ($Label) {
-      return "$Label ($Uri)"
+      return "$Label`: $e[36m$Uri$e[0m"
     }
-    return "$Uri"
+    return "$e[36m$Uri$e[0m"
   }
 
   if ($Label) {
-    return "`e]8;;$Uri`e\$Label`e]8;;`e\"
+    return "$e[36m$e]8;;$Uri$e\$Label$e]8;;$e\$e[0m"
   }
 
-  return "$Uri"
+  return "$e[36m$e]8;;$Uri$e\$Uri$e]8;;$e\$e[0m"
 }
 
 try {
@@ -67,30 +69,39 @@ try {
         return
     }
 
-    foreach ($notebook in $Hierarchy.Notebooks.Notebook ) {
+    $results = foreach ($notebook in $Hierarchy.Notebooks.Notebook ) {
       " "
       $notebook.Name
-      "=============="
       foreach ($sectiongroup in $notebook.SectionGroup) {
         if ($sectiongroup.isRecycleBin -ne 'true') {
-          "## " + $sectiongroup.Name
+          " > " + $sectiongroup.Name
         }
       }
-      "## #"
       foreach ($section in $notebook.Section) {
         #    $section |fl *
-        "### " + $section.Name
+        " > " + $section.Name
         foreach ($page in $section.Page) {
           #    $page |fl *
           $link = ""
           $OneNote.GetHyperlinkToObject($page.Id, "", [ref]$link)
-          Write-Output "#### $(Format-Hyperlink -Uri $link -Label $page.Name)"
-
+          Write-Output " > $($page.Name) [$(Format-Hyperlink -Uri "$link" -Label 'URL')]"
         }
       }
+
+      # Output a custom object for the results table
+      [PSCustomObject]@{
+        Notebook = $notebook.Name
+        SectionGroup = $sectiongroup.Name
+        Section = $section.Name
+        Page = $page.Name
+        URI = Format-Hyperlink -Uri $link
+      }
     }
+
 } catch {
     Write-Error "An error occurred while communicating with OneNote: $($_.Exception.Message)"
     Write-Error "Please ensure OneNote is running."
     exit 1
 }
+
+$results
