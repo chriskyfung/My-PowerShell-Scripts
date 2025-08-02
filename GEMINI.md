@@ -62,7 +62,7 @@ All PowerShell scripts **MUST** include a comment-based help header with the fol
 
 ### 3.4. Testing
 
-- This project uses **Pester** for unit and integration testing.
+- This project uses **Pester v5.7.1** for unit and integration testing.
 - All new scripts **MUST** be accompanied by Pester tests.
 - Any modifications to existing scripts **MUST** include corresponding updates to the tests.
 - All tests **MUST** pass before a commit is made.

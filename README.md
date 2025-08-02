@@ -40,7 +40,7 @@ For more details on how to utilize the scripts for a particular application, you
 
 ## Testing
 
-This project uses Pester for testing and PSScriptAnalyzer for static analysis. A `Build.ps1` script is provided to automate this process.
+This project uses Pester v5.7.1 for testing and PSScriptAnalyzer for static analysis. A `Build.ps1` script is provided to automate this process.
 
 ### Automated Build and Test
 
