@@ -15,11 +15,11 @@
   System.String. The script returns the absolute path to the user's TheBrain data directory.
 
 .NOTES
-  Version:        1.1.0
-  Author:         chriskyfung, Gemini
+  Version:        1.1.1
+  Author:         chriskyfung
   License:        GNU GPLv3 license
   Creation Date:  2025-11-10
-  Last Modified:  2025-08-01
+  Last Modified:  2025-09-06
 #>
 
 #Requires -Version 2.0
@@ -43,8 +43,9 @@ try {
     $result = Invoke-SqliteQuery -DataSource $theBrainMetaDatabase -Query $query
     $brainDataDirectory = $result.Value.Trim('"').Replace('\\', '\')
 
-    if ($null -eq $brainDataDirectory) {
-      $brainDataDirectory = Join-Path -Path ([Environment]::GetFolderPath('MyDocuments')) -ChildPath 'Brains'
+    if ($null -eq $brainDataDirectory -or $brainDataDirectory -eq '') {
+        # Default to 'Brains' folder in 'My Documents' if no value is found
+        $brainDataDirectory = Join-Path -Path ([Environment]::GetFolderPath('MyDocuments')) -ChildPath 'Brains'
     }
 
     # Check if the folder exists
