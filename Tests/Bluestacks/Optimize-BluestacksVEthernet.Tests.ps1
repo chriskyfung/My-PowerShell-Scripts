@@ -3,9 +3,13 @@
   Tests for the Optimize-BluestacksVEthernet.ps1 script.
 #>
 
-$scriptPath = Join-Path $PSScriptRoot "..\..\Bluestacks\Optimize-BluestacksVEthernet.ps1"
-
 Describe "Optimize-BluestacksVEthernet" -Tags "CI" {
+
+  BeforeAll {
+    # Get the absolute path to the script under test
+    $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\Bluestacks\Optimize-BluestacksVEthernet.ps1"
+  }
+
   It "Should run without errors" {
     if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
       Write-Host "Skipping test: Administrative privileges are required." -ForegroundColor Yellow
@@ -16,6 +20,6 @@ Describe "Optimize-BluestacksVEthernet" -Tags "CI" {
     Write-Host "Running test with administrative privileges..." -ForegroundColor Green
     Mock -CommandName Get-NetAdapter -MockWith { return @([pscustomobject]@{ Name = 'vEthernet (Default Switch)'; ifIndex = 1 }) }
     Mock -CommandName Set-NetIPInterface -MockWith { return $true }
-    & $scriptPath | Should Not Throw
+    & $script:ScriptPath | Should Not Throw
   }
 }

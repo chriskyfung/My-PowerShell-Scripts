@@ -2,11 +2,12 @@
 .SYNOPSIS
   Tests for Out-OneNoteSections.ps1
 #>
+
 Describe "Out-OneNoteSections.ps1" {
 
   BeforeAll {
     # Set the path to the script under test.
-    $script:ScriptPath = Join-Path $PSScriptRoot "..\..\OneNote\Out-OneNoteSections.ps1"
+    $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\OneNote\Out-OneNoteSections.ps1"
   }
 
   Context "When OneNote has notebooks" {

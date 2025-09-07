@@ -7,7 +7,7 @@ Describe "Find-OneNotePages.ps1" {
 
   BeforeAll {
     # Set the path to the script under test.
-    $script:ScriptPath = Join-Path $PSScriptRoot "..\..\OneNote\Find-OneNotePages.ps1"
+    $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\OneNote\Find-OneNotePages.ps1"
   }
 
   # This is an integration test that requires a running OneNote instance.
