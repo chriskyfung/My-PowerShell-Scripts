@@ -68,6 +68,33 @@ All PowerShell scripts **MUST** include a comment-based help header with the fol
 - All tests **MUST** pass before a commit is made.
 - A `Build.ps1` script is provided to automate the process of running Pester tests and PSScriptAnalyzer.
 
+#### Pester v5 Best Practices
+
+To ensure consistency and leverage the modern syntax of Pester v5, adhere to the following conventions when writing tests:
+
+-   **Mocking Commands**: Use the modern syntax `Mock <Command-Name> { <ScriptBlock> }`. The `-MockWith` parameter is deprecated. The `Mock` command should be placed inside a `BeforeAll`, `BeforeEach`, or `It` block.
+-   **Verifiable Mocks**: Use the `-Verifiable` switch on a `Mock` to create a mock that can be verified with `Should -Invoke`. This ensures that the mocked command was actually called during the test.
+-   **Accessing Parameters**: Inside a `Mock` script block, access parameters passed to the mocked command directly by their variable names (e.g., `$Path`, `$Name`). The `param()` block is no longer needed.
+-   **Mocking Pipeline Commands**: When mocking a command that receives input from the pipeline, use `@{ $_ }` to capture the pipeline object.
+-   **Parameter Filtering**: When using `-ParameterFilter` with a switch parameter, check for its presence with `.IsPresent` (e.g., `-ParameterFilter { $ListAvailable.IsPresent }`).
+-   **Mocking .NET Static Methods**: Direct mocking of .NET static methods is not a feature of Pester. The recommended approach is to wrap the static method call in a PowerShell function and then mock that wrapper function in your tests.
+
+**Example of a modern mock:**
+
+```powershell
+# Correctly mocking a PowerShell command and making it verifiable
+Mock Test-Path {
+    # '$Path' is directly available, no 'param($Path)' needed.
+    if ($Path -like '*important*') {
+        return $true
+    }
+    return $false
+} -Verifiable
+
+# In an 'It' block, you can then assert it was called
+Should -Invoke 'Test-Path' -Times 1 -Exactly
+```
+
 ### 3.5. Git Commit Conventions
 
 This project follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification. Each commit message should be prefixed with a type and an optional scope, followed by a description. An emoji is also used at the beginning of the subject line.
