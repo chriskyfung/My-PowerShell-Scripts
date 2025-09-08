@@ -8,7 +8,7 @@ Describe "Get-TheBrainNotesLinks.ps1" {
     $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\theBrain\Get-TheBrainNotesLinks.ps1"
 
     # # Create a temporary directory structure for testing
-    $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "TestBrain") -Force
+    $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "Test-GetTheBrainLinks") -Force
     $thought1Dir = New-Item -Path (Join-Path $tempDir "Thought1") -ItemType Directory
     $thought2Dir = New-Item -Path (Join-Path $tempDir "Thought2") -ItemType Directory
     $backupDir = New-Item -Path (Join-Path $tempDir "Backup") -ItemType Directory

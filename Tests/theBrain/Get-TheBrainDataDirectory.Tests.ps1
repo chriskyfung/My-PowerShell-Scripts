@@ -13,7 +13,7 @@ Describe 'Get-TheBrainDataDirectory' {
     # Path to the script being tested
     $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\theBrain\Get-TheBrainDataDirectory.ps1"
 
-    $env:LOCALAPPDATA = '/tmp' # Use a predictable temp path for tests
+    $env:LOCALAPPDATA = $env:TEMP # Use a predictable temp path for tests
     # Mock Invoke-SqliteQuery to return a specific path
     Get-Module -Name PSSQLite | Remove-Module
     New-Module -Name PSSQLite  -ScriptBlock {

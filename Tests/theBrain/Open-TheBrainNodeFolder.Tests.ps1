@@ -16,7 +16,7 @@ BeforeAll {
   $script:GetDataDirectoryScriptPath = Resolve-Path -Path "$PSScriptRoot/../../theBrain/Get-TheBrainDataDirectory.ps1"
 
   # Create a temporary directory to simulate TheBrain's data folder structure
-  $script:TempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "PesterTest-OpenTheBrainNode")
+  $script:TempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "Test-OpenTheBrainNode")
   $script:fakeBrainDataDir = Join-Path $script:TempDir.FullName "TheBrain"
   $null = New-Item -ItemType Directory -Path $script:fakeBrainDataDir
 

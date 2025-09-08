@@ -10,7 +10,7 @@ Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
     $script:GetDataDirectoryScriptPath = Resolve-Path -Path "$PSScriptRoot\..\..\theBrain\Get-TheBrainDataDirectory.ps1"
 
     # Set up a temporary directory to simulate TheBrain's data folder
-    $script:TestDrive = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "TestBrain") -Force
+    $script:TestDrive = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "Test-ResizeTheBrainNotesYouTubeThumbnail") -Force
     $script:TestBrainDataDir = $script:TestDrive.FullName
     $script:TestThoughtDir = Join-Path $script:TestBrainDataDir 'TestThought'
     $script:TestBackupDir = Join-Path $script:TestBrainDataDir 'Backup'

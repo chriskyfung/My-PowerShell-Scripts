@@ -6,7 +6,7 @@ BeforeAll {
   $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\theBrain\Format-TheBrainNotesYouTubeThumbnail.ps1"
 
   # Set up a temporary file system structure to simulate TheBrain's data
-  $script:TestDrive = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "TestBrain") -Force
+  $script:TestDrive = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "Test-FormatTheBrainYouTubeThumbnail") -Force
   $script:BrainFolder = $script:TestDrive.FullName
   $script:BackupFolder = Join-Path $BrainFolder 'Backup'
   $script:NoteFolder = Join-Path $BrainFolder 'TestNote'
