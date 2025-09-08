@@ -18,8 +18,10 @@ Describe "Optimize-BluestacksVEthernet" -Tags "CI" {
 
     # Code that requires admin permissions
     Write-Host "Running test with administrative privileges..." -ForegroundColor Green
-    Mock -CommandName Get-NetAdapter -MockWith { return @([pscustomobject]@{ Name = 'vEthernet (Default Switch)'; ifIndex = 1 }) }
-    Mock -CommandName Set-NetIPInterface -MockWith { return $true }
+    Mock Get-NetAdapter {
+      return @([pscustomobject]@{ Name = 'vEthernet (Default Switch)'; ifIndex = 1 })
+    } -Verifiable
+    Mock Set-NetIPInterface { return $true } -Verifiable
     & $script:ScriptPath | Should Not Throw
   }
 }

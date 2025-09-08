@@ -40,26 +40,26 @@ Describe "Open-TheBrainNodeFolder.ps1" {
   BeforeEach {
     # Mock the Get-TheBrainDataDirectory.ps1 script to return our temp path.
     # This is the correct Pester v5 syntax for mocking a script that is dot-sourced.
-    Mock -CommandName $script:GetDataDirectoryScriptPath -MockWith {
+    Mock $script:GetDataDirectoryScriptPath {
       return $script:fakeBrainDataDir
-    }
+    } -Verifiable
 
     # Mock explorer.exe to prevent it from actually opening a window
-    Mock -CommandName explorer.exe -MockWith {
+    Mock explorer.exe {
       # This space intentionally left blank
-    }
+    } -Verifiable
 
     # Mock Write-Warning to capture its output for verification
-    Mock -CommandName Write-Warning -MockWith {
+    Mock Write-Warning {
       param($Message)
       $script:WarningMessage = $Message
-    }
+    } -Verifiable
   }
 
   Context "when the node folder exists" {
     It "should find the folder and call explorer.exe with the correct path" {
 
-      Mock Get-ChildItem { return @(Get-Item $script:fakeNodeFolderPath) }
+      Mock Get-ChildItem { return @(Get-Item $script:fakeNodeFolderPath) } -Verifiable
 
       # Run the script with the NodeId of the folder we created
       . $script:ScriptPath -NodeId $script:fakeNodeId
@@ -93,7 +93,9 @@ Describe "Open-TheBrainNodeFolder.ps1" {
       # Mock Get-Module to simulate that PSSQLite is not found, causing Get-TheBrainDataDirectory to fail
       Mock Get-Module {
         throw "Failed to find TheBrain data directory"
-      } -ParameterFilter { $Name -eq "PSSQLite" }
+      } -ParameterFilter {
+        $Name -eq "PSSQLite"
+      } -Verifiable
 
       # Mock Write-Error to verify it's called
       Mock Write-Error

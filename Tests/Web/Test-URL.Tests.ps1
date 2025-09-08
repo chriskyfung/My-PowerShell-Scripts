@@ -12,14 +12,13 @@ Describe "Test-URL Script" -Tag "CI" {
     # Mock Invoke-WebRequest to simulate web responses.
     # This mock will return a success status code for most URLs,
     # but throw an error for a specific invalid domain.
-    Mock 'Invoke-WebRequest' {
-      param($Uri)
+    Mock Invoke-WebRequest {
       if ($Uri -eq 'https://no-such.domain') {
         throw "Simulated error: Host not found"
       }
       else {
         return [pscustomobject]@{ StatusCode = 200 }
-      }
+      } -Verifiable
     }
   }
 

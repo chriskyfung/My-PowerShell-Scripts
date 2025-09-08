@@ -69,10 +69,10 @@ Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' {
     )
 
     # Mock the commands to return our simulated objects and control behavior
-    Mock Get-ChildItem { return Get-Item $script:NoteFolder }
-    Mock Select-String { return $MatchObject }
-    Mock Get-Content { return $script:OriginalContent.Split([System.Environment]::NewLine) }
-    Mock New-Item { return [pscustomobject]@{ FullName = $Path[0] } }
+    Mock Get-ChildItem { return Get-Item $script:NoteFolder } -Verifiable
+    Mock Select-String { return $MatchObject } -Verifiable
+    Mock Get-Content { return $script:OriginalContent.Split([System.Environment]::NewLine) } -Verifiable
+    Mock New-Item { return [pscustomobject]@{ FullName = $Path[0] } } -Verifiable
 
     # Act
     . $script:ScriptPath
@@ -104,8 +104,8 @@ Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' {
   It 'should do nothing if no matching links are found' {
     # Arrange
     # Mock Select-String to return no matches
-    Mock 'Get-ChildItem'
-    Mock 'Select-String' -MockWith { return $null }
+    Mock Get-ChildItem -Verifiable
+    Mock Select-String { return $null } -Verifiable
 
     # Act
     . $script:ScriptPath
@@ -140,12 +140,12 @@ Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' {
         )
       }
     )
-    Mock Get-ChildItem { Get-Item $script:NoteFolder }
-    Mock Select-String { return $MatchObject }
-    Mock New-Item { return [pscustomobject]@{ FullName = $Path } }
+    Mock Get-ChildItem { Get-Item $script:NoteFolder } -Verifiable
+    Mock Select-String { return $MatchObject } -Verifiable
+    Mock New-Item { return [pscustomobject]@{ FullName = $Path } } -Verifiable
 
     # Mock Copy-Item to throw an error
-    Mock Copy-Item { throw "Access Denied" }
+    Mock Copy-Item { throw "Access Denied" } -Verifiable
 
     # Act & Assert
     # Verify that the script throws the expected exception

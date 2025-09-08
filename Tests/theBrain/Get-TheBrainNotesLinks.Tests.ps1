@@ -20,7 +20,7 @@ Describe "Get-TheBrainNotesLinks.ps1" {
     Set-Content -Path (Join-Path $thought3Dir "Notes.md") -Value "This note is in a backup folder and should be ignored: [backup link](https://www.yahoo.com)."
 
     # Mock Format-List to prevent UI from showing during tests
-    Mock Format-List { return @($_) } -Verifiable
+    Mock Format-List { return @( $_ ) } -Verifiable
   }
 
   AfterAll {
