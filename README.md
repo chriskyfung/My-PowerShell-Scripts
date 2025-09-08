@@ -16,7 +16,8 @@ Some of the features of the project are:
 
 To run these scripts, you need:
 
-- PowerShell 5.1 or higher
+- Windows 10 or 11
+- PowerShell 5.1 or higher (tested against 5.1 and 7.4)
 - Microsoft Onenote 2016 or higher
 - TheBrain 13 or higher
 - Some third-party PowerShell modules (see the scripts for details)

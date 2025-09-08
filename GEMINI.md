@@ -56,13 +56,14 @@ All PowerShell scripts **MUST** include a comment-based help header with the fol
 ### 3.3. Code Quality and Linting
 
 - This project uses **PSScriptAnalyzer** for static analysis.
-- The primary configuration is `PSScriptAnalyzerSettings.psd1` in the root directory. There are other specific configurations in subdirectories.
+- The primary configuration is `PSScriptAnalyzerSettings.psd1` in the root directory, which is configured to ensure compatibility with **PowerShell 5.1 and 7.4 on Windows 10/11**. There are other specific configurations in subdirectories.
 - **Before committing any changes to PowerShell scripts (`.ps1`), you MUST run PSScriptAnalyzer to ensure compatibility and adherence to project rules.**
 - A build script, `Build.ps1`, will be created to automate the process of running PSScriptAnalyzer and Pester tests.
 
 ### 3.4. Testing
 
 - This project uses **Pester v5.7.1** for unit and integration testing.
+- **Test Isolation**: To prevent mock leakage and ensure a clean state, the `Build.ps1` script invokes each test file (`*.Tests.ps1`) in a separate, isolated PowerShell process. The script automatically detects and uses the appropriate executable (`pwsh` or `powershell`) available on the system. This is the standard for this project and must be maintained.
 - All new scripts **MUST** be accompanied by Pester tests.
 - Any modifications to existing scripts **MUST** include corresponding updates to the tests.
 - All tests **MUST** pass before a commit is made.
