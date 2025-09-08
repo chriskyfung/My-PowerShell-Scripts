@@ -53,14 +53,14 @@ try {
       # Backup the Notes.md file
       $Timestamp = (Get-Item $FilePath).LastWriteTime.ToString('yyyyMMdd_HHmmss')
       $BackupFilename = "$FilenameWithoutExtension-$Timestamp$FileExtension~"
-      $BackupPath = Join-Path $BackupLocation $BackupFilename
-      Copy-Item -Path $FilePath -Destination (New-Item -ItemType File -Force -Path $BackupPath) -Force
+      $BackupFile = New-Item -ItemType File -Force -Path (Join-Path $BackupLocation $BackupFilename)
+      Copy-Item -Path $FilePath -Destination $BackupFile.FullName -Force
       # Backup the md-image file
       $LocalImageFile = $Match.Matches[0].Groups['IMAGEFILE'].Value
-      $LocalImagePath = Convert-Path "$ParentFolder/.data/md-images/$LocalImageFile.jpg"
-      $BackupImagePath = $LocalImagePath.Replace($BrainFolder, $BackupFolder)
-      Move-Item -Path $LocalImagePath -Destination (New-Item -ItemType File -Force -Path $BackupImagePath) -Force
-      Write-Verbose "Created --> '$BackupPath'"
+      $LocalImagePath = Convert-Path "$ParentFolder\.data\md-images\$LocalImageFile.jpg"
+      $BackupImageFile = New-Item -ItemType File -Force -Path $LocalImagePath.Replace($BrainFolder, $BackupFolder)
+      Move-Item -Path $LocalImagePath -Destination $BackupImageFile.FullName -Force
+      Write-Verbose "Created --> '$BackupFile.FullName'"
       # Amend the link of the YouTube thumbnail with UTF8 encoding
       $Pattern = $Match.Matches.Value
       $AltText = $Match.Matches[0].Groups['ALT'].Value

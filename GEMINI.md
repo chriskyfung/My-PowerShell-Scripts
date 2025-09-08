@@ -56,17 +56,45 @@ All PowerShell scripts **MUST** include a comment-based help header with the fol
 ### 3.3. Code Quality and Linting
 
 - This project uses **PSScriptAnalyzer** for static analysis.
-- The primary configuration is `PSScriptAnalyzerSettings.psd1` in the root directory. There are other specific configurations in subdirectories.
+- The primary configuration is `PSScriptAnalyzerSettings.psd1` in the root directory, which is configured to ensure compatibility with **PowerShell 5.1 and 7.4 on Windows 10/11**. There are other specific configurations in subdirectories.
 - **Before committing any changes to PowerShell scripts (`.ps1`), you MUST run PSScriptAnalyzer to ensure compatibility and adherence to project rules.**
 - A build script, `Build.ps1`, will be created to automate the process of running PSScriptAnalyzer and Pester tests.
 
 ### 3.4. Testing
 
 - This project uses **Pester v5.7.1** for unit and integration testing.
+- **Test Isolation**: To prevent mock leakage and ensure a clean state, the `Build.ps1` script invokes each test file (`*.Tests.ps1`) in a separate, isolated PowerShell process. The script automatically detects and uses the appropriate executable (`pwsh` or `powershell`) available on the system. This is the standard for this project and must be maintained.
 - All new scripts **MUST** be accompanied by Pester tests.
 - Any modifications to existing scripts **MUST** include corresponding updates to the tests.
 - All tests **MUST** pass before a commit is made.
 - A `Build.ps1` script is provided to automate the process of running Pester tests and PSScriptAnalyzer.
+
+#### Pester v5 Best Practices
+
+To ensure consistency and leverage the modern syntax of Pester v5, adhere to the following conventions when writing tests:
+
+-   **Mocking Commands**: Use the modern syntax `Mock <Command-Name> { <ScriptBlock> }`. The `-MockWith` parameter is deprecated. The `Mock` command should be placed inside a `BeforeAll`, `BeforeEach`, or `It` block.
+-   **Verifiable Mocks**: Use the `-Verifiable` switch on a `Mock` to create a mock that can be verified with `Should -Invoke`. This ensures that the mocked command was actually called during the test.
+-   **Accessing Parameters**: Inside a `Mock` script block, access parameters passed to the mocked command directly by their variable names (e.g., `$Path`, `$Name`). The `param()` block is no longer needed.
+-   **Mocking Pipeline Commands**: When mocking a command that receives input from the pipeline, use `@{ $_ }` to capture the pipeline object.
+-   **Parameter Filtering**: When using `-ParameterFilter` with a switch parameter, check for its presence with `.IsPresent` (e.g., `-ParameterFilter { $ListAvailable.IsPresent }`).
+-   **Mocking .NET Static Methods**: Direct mocking of .NET static methods is not a feature of Pester. The recommended approach is to wrap the static method call in a PowerShell function and then mock that wrapper function in your tests.
+
+**Example of a modern mock:**
+
+```powershell
+# Correctly mocking a PowerShell command and making it verifiable
+Mock Test-Path {
+    # '$Path' is directly available, no 'param($Path)' needed.
+    if ($Path -like '*important*') {
+        return $true
+    }
+    return $false
+} -Verifiable
+
+# In an 'It' block, you can then assert it was called
+Should -Invoke 'Test-Path' -Times 1 -Exactly
+```
 
 ### 3.5. Git Commit Conventions
 

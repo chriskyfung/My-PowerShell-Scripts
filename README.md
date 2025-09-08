@@ -16,7 +16,8 @@ Some of the features of the project are:
 
 To run these scripts, you need:
 
-- PowerShell 5.1 or higher
+- Windows 10 or 11
+- PowerShell 5.1 or higher (tested against 5.1 and 7.4)
 - Microsoft Onenote 2016 or higher
 - TheBrain 13 or higher
 - Some third-party PowerShell modules (see the scripts for details)
@@ -40,25 +41,29 @@ For more details on how to utilize the scripts for a particular application, you
 
 ## Testing
 
-This project uses Pester v5.7.1 for testing and PSScriptAnalyzer for static analysis. A `Build.ps1` script is provided to automate this process.
+This project uses [Pester](https://pester.dev/) (v5.7.1) for testing and [PSScriptAnalyzer](https://github.com/PowerShell/PSScriptAnalyzer) for static analysis.
 
-### Automated Build and Test
+### Running Tests
 
-To run the build script, which includes PSScriptAnalyzer and Pester tests, open a PowerShell terminal in the root of the project and execute the following command:
+To run all checks, including PSScriptAnalyzer and Pester tests, execute the build script from the project root:
 
 ```powershell
 .\Build.ps1
 ```
 
+### Writing Tests
+
+When contributing, please follow modern Pester v5 conventions.
+
+-   **Structure:** Use `Describe` and `It` blocks to structure your tests. ([Read more](https://pester.dev/docs/quick-start#writing-your-first-pester-test))
+-   **Assertions:** Use `Should` to check the results of your code. ([Read more](https://pester.dev/docs/assertions/should))
+-   **Mocking:** Isolate your tests by replacing dependencies with `Mock`. ([Read more](https://pester.dev/docs/mocking))
+
+**Key Convention:** Direct mocking of .NET static methods is not supported by Pester. Please wrap the static method in a PowerShell function and mock the wrapper instead.
+
 ### Debugging in Visual Studio Code
 
-To debug in Visual Studio Code, set a breakpoint in your script or test file, then open the **Run and Debug** view (Ctrl+Shift+D). From the dropdown menu, select one of the following configurations and press <kbd>F5</kbd> to start debugging:
-
--   **PowerShell: Launch Current File**: Runs the currently open PowerShell script.
--   **PowerShell: Run Pester Tests**: Runs all Pester tests in the project.
--   **PowerShell: Run Pester Test in Current File**: Runs the Pester tests located in the currently open test file.
-
-For more information on Pester, visit the official documentation: <https://pester.dev/docs/quick-start> .
+To debug, set a breakpoint and use the **Run and Debug** view (Ctrl+Shift+D). The existing `launch.json` provides configurations for running the current file or its tests.
 
 ## Disclaimer
 
