@@ -50,12 +50,8 @@ Describe "Get-DiskReliabilityCounter Script" -Tag "CI" {
   }
 
   Context "Execution" {
-    It "Should execute without throwing" {
-      $isAdministrator = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-      if (-not $isAdministrator) {
-        Write-Warning "Skipping integration test that requires Administrator privileges."
-        return # Exit the test block if not running as Administrator
-      }
+    It "Should execute without throwing" -Skip:(-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    # Code that requires admin permissions
       { & $script:ScriptPath } | Should -Not -Throw
     }
   }
