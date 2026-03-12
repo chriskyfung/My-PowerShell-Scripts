@@ -9,6 +9,28 @@ This folder contains PowerShell scripts for Windows system administration and ma
 
 ## Scripts
 
+### Get-DiskReliabilityCounter.ps1
+
+Lists temperature, errors, wear, and age of all disk drives.
+
+This script provides a summary of disk drive health by combining the `Get-Disk` and `Get-StorageReliabilityCounter` cmdlets.
+
+**Note:** This script requires Administrator privileges to run.
+
+**Usage:**
+
+```powershell
+.\Get-DiskReliabilityCounter.ps1
+```
+
+**Output:**
+
+| DeviceId | FriendlyName | Temperature | ReadErrorsUncorrected | Wear | PowerOnHours |
+| -------- | ------------ | ----------- | --------------------- | ---- | ------------ |
+| 0        | Samsung SSD  | 35          | 0                     | 5    | 12500        |
+
+---
+
 ### Optimize-DockerDesktopVHD.ps1
 
 Optimizes the Docker Desktop virtual hard disk (VHDX) to reclaim unused space.
