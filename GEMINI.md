@@ -78,6 +78,7 @@ To ensure consistency and leverage the modern syntax of Pester v5, adhere to the
 -   **Accessing Parameters**: Inside a `Mock` script block, access parameters passed to the mocked command directly by their variable names (e.g., `$Path`, `$Name`). The `param()` block is no longer needed.
 -   **Mocking Pipeline Commands**: When mocking a command that receives input from the pipeline, use `@{ $_ }` to capture the pipeline object.
 -   **Parameter Filtering**: When using `-ParameterFilter` with a switch parameter, check for its presence with `.IsPresent` (e.g., `-ParameterFilter { $ListAvailable.IsPresent }`).
+-   **Conditionally Skipping Tests**: For integration tests that require specific conditions (e.g., administrator privileges), use the `-Skip` parameter on the `It` block with a condition. This ensures the test suite runs without failing in environments that don't meet the requirements.
 -   **Mocking .NET Static Methods**: Direct mocking of .NET static methods is not a feature of Pester. The recommended approach is to wrap the static method call in a PowerShell function and then mock that wrapper function in your tests.
 
 **Example of a modern mock:**
@@ -114,6 +115,7 @@ This project follows the [Conventional Commits](https://www.conventionalcommits.
 - The scripts have a key dependency on the **`PSSQLite` PowerShell module**, which is used to query TheBrain's internal database.
 - The `README.md` specifies version `1.1.0`. When assisting, verify its installation using `Get-Module -ListAvailable -Name PSSQLite`.
 - The scripts also depend on TheBrain version 13 for Windows being installed, as they access its local application data.
+- Scripts in the `Windows/` folder may depend on the **Hyper-V PowerShell module** (`Hyper-V`), which provides cmdlets like `Optimize-VHD`. This module must be enabled as a Windows Feature.
 
 ## 5. Workflow for Modifications
 

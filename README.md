@@ -8,7 +8,7 @@ Some of the features of the project are:
 
 -   **OneNote**: You can use scripts to automate the creation, editing, and organization of notes, notebooks, and sections in OneNote.
 -   **TheBrain**: You can use scripts to interact with theBrain, a powerful software for mind mapping and knowledge management.
--   **Windows**: You can use scripts to customize windows settings, create shortcuts, manage updates, and more.
+-   **Windows**: Use scripts to manage system components and applications, such as optimizing Docker Desktop's disk usage or monitoring disk health.
 -   **Bluestacks**: You can use scripts to perform tasks and actions in Bluestacks, an emulator that lets you run Android apps on PC.
 -   **And more**: You can use scripts for other purposes, such as web scraping, file management, text processing, etc.
 
