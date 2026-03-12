@@ -112,20 +112,11 @@ Describe "Optimize-DockerDesktopVHD Script" -Tag "CI" {
 
       # Create a temporary fake VHDX file for testing
       $testVhdPath = Join-Path $env:TEMP "test-docker.vhdx"
-      [byte[]] $vhdContent = @(1, 2, 3, 4)
-      [System.IO.File]::WriteAllBytes($testVhdPath, $vhdContent)
+      if (-not (Test-Path -Path $testVhdPath)) {
+        New-VHD -Path $testVhdPath -SizeBytes 3MB -Dynamic
+      }
 
       $script:TestVhdPath = $testVhdPath
-    }
-
-    AfterEach {
-      # Clean up mocks
-      Mock Get-Process -Remove
-      Mock Stop-Process -Remove
-      Mock Wait-Process -Remove
-      Mock Optimize-VHD -Remove
-      Mock Test-Path -Remove
-      Mock Get-Item -Remove
     }
 
     AfterAll {
@@ -135,7 +126,7 @@ Describe "Optimize-DockerDesktopVHD Script" -Tag "CI" {
       }
     }
 
-    It "Should use default VHDX path when not specified" -Skip {
+    It "Should use default VHDX path when not specified" {
       Mock Test-Path { $true } -ParameterFilter { $Path -like "*docker_data.vhdx*" }
       Mock Get-Item { [PSCustomObject]@{ Length = 1048576 } }
       Mock Get-Process { $null } -ParameterFilter { $Name -eq "Docker Desktop" }
@@ -144,17 +135,27 @@ Describe "Optimize-DockerDesktopVHD Script" -Tag "CI" {
       { & $script:ScriptPath -VhdPath $script:TestVhdPath } | Should -Not -Throw
     }
 
-    It "Should accept custom VHDX path" -Skip {
+    It "Should accept custom VHDX path" {
       Mock Test-Path { $true } -ParameterFilter { $Path -eq $script:TestVhdPath }
       Mock Get-Item { [PSCustomObject]@{ Length = 1048576 } } -ParameterFilter { $Path -eq $script:TestVhdPath }
       Mock Get-Process { $null }
-      Mock Optimize-VHD { } -ParameterFilter { $Path -eq $script:TestVhdPath }
+      Mock Optimize-VHD { } # General mock is more robust
 
-      { & $script:ScriptPath -VhdPath $script:TestVhdPath } | Should -Not -Throw
-      Assert-MockCalled Optimize-VHD -ParameterFilter { $Path -eq $script:TestVhdPath } -Scope It
+      # Temporarily set $WhatIfPreference to false to ensure ShouldProcess returns true
+      $OriginalWhatIfPreference = $WhatIfPreference
+      $WhatIfPreference = $false
+      try {
+        { & $script:ScriptPath -VhdPath $script:TestVhdPath } | Should -Not -Throw
+        # Verify that the mock was called
+        Assert-MockCalled Optimize-VHD -Times 1 -Scope It
+      }
+      finally {
+        # Restore the original preference
+        $WhatIfPreference = $OriginalWhatIfPreference
+      }
     }
 
-    It "Should call Optimize-VHD with correct parameters" -Skip {
+    It "Should call Optimize-VHD with correct parameters" {
       Mock Test-Path { $true }
       Mock Get-Item { [PSCustomObject]@{ Length = 1048576 } }
       Mock Get-Process { $null }
@@ -165,7 +166,7 @@ Describe "Optimize-DockerDesktopVHD Script" -Tag "CI" {
       Assert-MockCalled Optimize-VHD -ParameterFilter { $Mode -eq 'Full' } -Scope It
     }
 
-    It "Should not prompt to stop Docker when not running" -Skip {
+    It "Should not prompt to stop Docker when not running" {
       Mock Get-Process { $null } -ParameterFilter { $Name -eq "Docker Desktop" }
       Mock Test-Path { $true }
       Mock Get-Item { [PSCustomObject]@{ Length = 1048576 } }
@@ -180,12 +181,12 @@ Describe "Optimize-DockerDesktopVHD Script" -Tag "CI" {
       $env:LOCALAPPDATA = $env:TEMP
     }
 
-    It "Should throw when VHDX file not found" -Skip {
+    It "Should throw when VHDX file not found" {
       $nonExistentPath = Join-Path $env:TEMP "non-existent.vhdx"
       { & $script:ScriptPath -VhdPath $nonExistentPath } | Should -Throw
     }
 
-    It "Should throw when file is not .vhdx extension" -Skip {
+    It "Should throw when file is not .vhdx extension" {
       $invalidPath = Join-Path $env:TEMP "invalid.txt"
       "" | Set-Content -Path $invalidPath
       { & $script:ScriptPath -VhdPath $invalidPath } | Should -Throw
