@@ -6,7 +6,6 @@ This folder contains PowerShell scripts for Windows system administration and ma
 
 - Windows 10 or 11
 - PowerShell 5.1 or higher
-- Administrator privileges (required by all scripts in this folder)
 
 ## Scripts
 

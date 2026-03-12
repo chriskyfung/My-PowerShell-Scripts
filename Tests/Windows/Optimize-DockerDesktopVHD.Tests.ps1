@@ -29,11 +29,6 @@ Describe "Optimize-DockerDesktopVHD Script" -Tag "CI" {
       $errors.Count | Should -Be 0
     }
 
-    It "Should have Requires-RunAsAdministrator directive" {
-      $content = Get-Content -Path $script:ScriptPath -Raw
-      $content | Should -Match "#Requires\s+-RunAsAdministrator"
-    }
-
     It "Should have Requires-Version 5.1 or higher" {
       $content = Get-Content -Path $script:ScriptPath -Raw
       $content | Should -Match "#Requires\s+-Version\s+5\.[1-9]"

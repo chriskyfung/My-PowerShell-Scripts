@@ -39,7 +39,6 @@
 
 #Requires -Version 5.1
 #Requires -PSEdition Desktop
-#Requires -RunAsAdministrator
 
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
