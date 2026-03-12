@@ -82,6 +82,10 @@ function Stop-DockerDesktop {
                 Stop-Process -Id $dockerDesktopProcess.Id -Force
                 Wait-Process -Id $dockerDesktopProcess.Id -Timeout 30 -ErrorAction SilentlyContinue
                 Write-Host "Docker Desktop has been stopped."
+
+                if (Get-Process -Id $dockerDesktopProcess.Id -ErrorAction SilentlyContinue) {
+                    throw "Failed to stop Docker Desktop within the timeout period."
+                }
             }
         }
         else {
