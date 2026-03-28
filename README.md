@@ -10,6 +10,7 @@ Some of the features of the project are:
 -   **TheBrain**: You can use scripts to interact with theBrain, a powerful software for mind mapping and knowledge management.
 -   **Windows**: Use scripts to manage system components and applications, such as optimizing Docker Desktop's disk usage or monitoring disk health.
 -   **Bluestacks**: You can use scripts to perform tasks and actions in Bluestacks, an emulator that lets you run Android apps on PC.
+-   **Cherry Studio**: Scripts for managing Cherry Studio MCP (Model Context Protocol) integrations, including OAuth reset utilities for Notion MCP.
 -   **And more**: You can use scripts for other purposes, such as web scraping, file management, text processing, etc.
 
 ## Requirements
@@ -20,6 +21,7 @@ To run these scripts, you need:
 - PowerShell 5.1 or higher (tested against 5.1 and 7.4)
 - Microsoft Onenote 2016 or higher
 - TheBrain 13 or higher
+- Cherry Studio v1.8.4 (tested version, MCP support since v1.2.5+)
 - Some third-party PowerShell modules (see the scripts for details)
 
 ## Usage
