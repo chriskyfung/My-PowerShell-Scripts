@@ -1,52 +1,119 @@
 <#
 .SYNOPSIS
-    重置 Cherry Studio 的 Notion MCP OAuth 快取
+    Reset Cherry Studio's Notion MCP OAuth cache
 
 .DESCRIPTION
-    清除 Notion MCP (https://mcp.notion.com/mcp) 的雜湊命名 OAuth JSON 檔案
-    重啟後自動觸發重新授權流程
+    Clear the hash-named OAuth JSON file for Notion MCP (https://mcp.notion.com/mcp)
+    Automatically triggers re-authorization flow after restart
+
+.PARAMETER OauthDir
+    Optional. Override the default OAuth directory path.
+    Default: $env:USERPROFILE\.cherrystudio\config\mcp\oauth
+
+.PARAMETER PassThru
+    Optional. Return the result as an object instead of writing to host.
 
 .EXAMPLE
     .\Reset-CherryStudioNotionMCP.ps1
+
+.EXAMPLE
+    .\Reset-CherryStudioNotionMCP.ps1 -OauthDir "C:\Temp\TestOAuth"
+
+.EXAMPLE
+    $result = .\Reset-CherryStudioNotionMCP.ps1 -PassThru
 #>
 
 [CmdletBinding()]
-param()
+param(
+    # Override the default OAuth directory path (for testing purposes)
+    [string]$OauthDir = (Join-Path $env:USERPROFILE ".cherrystudio\config\mcp\oauth"),
 
-# Notion MCP 伺服器 URL，Cherry Studio 使用此 URL 的 MD5 雜湊作為 OAuth 檔案名稱
+    # Return result as object for testing
+    [switch]$PassThru
+)
+
+# Notion MCP server URL, Cherry Studio uses the MD5 hash of this URL as the OAuth filename
 $url = "https://mcp.notion.com/mcp"
 
-# 計算 URL 的 MD5 雜湊值，用於識別對應的 OAuth 快取檔案
+# Calculate MD5 hash of the URL to identify the corresponding OAuth cache file
 $md5 = [System.Security.Cryptography.MD5]::Create()
 $bytes = [System.Text.Encoding]::UTF8.GetBytes($url)
 $hashBytes = $md5.ComputeHash($bytes)
 $hashHex = [System.BitConverter]::ToString($hashBytes) -replace '-', ''
 
 $fullHash = $hashHex.ToLower()
-# Cherry Studio 儲存 OAuth token 的目錄路徑
-$oauthDir = Join-Path $env:USERPROFILE ".cherrystudio\config\mcp\oauth"
 
-Write-Host ""
-Write-Host "Notion MCP URL: $url"
-Write-Host "計算出的雜湊前綴: $fullHash"
-Write-Host "搜尋資料夾: $oauthDir"
-Write-Host ""
+# Build output messages
+$messages = @()
+$messages += "Notion MCP URL: $url"
+$messages += "Calculated hash prefix: $fullHash"
+$messages += "Searching directory: $OauthDir"
 
-# 搜尋符合雜湊前綴的 OAuth JSON 檔案
-$targetFiles = Get-ChildItem -Path $oauthDir -Filter "$fullHash*.json" -ErrorAction SilentlyContinue
+if ($PassThru) {
+    Write-Verbose ($messages -join "`n")
+} else {
+    Write-Host ""
+    $messages | ForEach-Object { Write-Host $_ }
+    Write-Host ""
+}
+
+# Search for OAuth JSON files matching the hash prefix
+$targetFiles = Get-ChildItem -Path $OauthDir -Filter "$fullHash*.json" -ErrorAction SilentlyContinue
+
+$result = @{
+    Success = $false
+    FilesDeleted = @()
+    Message = ""
+}
 
 if ($targetFiles) {
-  Write-Host "找到以下檔案：" -ForegroundColor Yellow
-  $targetFiles | ForEach-Object { Write-Host " - $($_.Name)" }
+    $foundMsg = "Found the following files:"
+    if ($PassThru) {
+        Write-Verbose $foundMsg
+    } else {
+        Write-Host $foundMsg -ForegroundColor Yellow
+    }
 
-  # 刪除找到的 OAuth 快取檔案
-  $targetFiles | Remove-Item -Force
+    $targetFiles | ForEach-Object {
+        if ($PassThru) {
+            Write-Verbose " - $($_.Name)"
+        } else {
+            Write-Host " - $($_.Name)"
+        }
+    }
 
-  Write-Host ""
-  Write-Host "已刪除 Notion MCP 的授權快取檔。" -ForegroundColor Green
-  Write-Host "請重新啟動 Cherry Studio，系統應會自動打開瀏覽器重新授權。"
+    # Delete the found OAuth cache files
+    $deletedFiles = @()
+    $targetFiles | ForEach-Object {
+        $deletedFiles += $_.Name
+        Remove-Item $_.FullName -Force
+    }
+
+    $successMsg = "Notion MCP OAuth cache file has been deleted."
+    if ($PassThru) {
+        Write-Verbose $successMsg
+    } else {
+        Write-Host ""
+        Write-Host $successMsg -ForegroundColor Green
+        Write-Host "Please restart Cherry Studio, the system should automatically open the browser for re-authorization."
+    }
+
+    $result.Success = $true
+    $result.FilesDeleted = $deletedFiles
+    $result.Message = $successMsg
 }
 else {
-  Write-Host "找不到對應的 Notion MCP JSON 檔。" -ForegroundColor Red
-  Write-Host "請確認你曾在這台電腦上成功授權過 Notion MCP。"
+    $notFoundMsg = "No corresponding Notion MCP JSON file found."
+    if ($PassThru) {
+        Write-Verbose $notFoundMsg
+    } else {
+        Write-Host $notFoundMsg -ForegroundColor Red
+        Write-Host "Please confirm that you have successfully authorized Notion MCP on this computer before."
+    }
+
+    $result.Message = $notFoundMsg
+}
+
+if ($PassThru) {
+    return $result
 }
