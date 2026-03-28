@@ -32,6 +32,8 @@ param(
     [switch]$PassThru
 )
 
+$ErrorActionPreference = "Stop"
+
 # Notion MCP server URL, Cherry Studio uses the MD5 hash of this URL as the OAuth filename
 $url = "https://mcp.notion.com/mcp"
 
