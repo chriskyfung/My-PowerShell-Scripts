@@ -67,7 +67,17 @@ try {
 
     # Save the results as a CSV file if an output path is specified
     if ($OutputPath) {
-        $LinkList | Export-Csv -Path $OutputPath -Encoding UTF8 -NoTypeInformation
+        # Sanitize data for CSV export to prevent CSV injection.
+        # Prepend a single quote to values starting with potentially executable characters.
+        $CsvData = $LinkList | ForEach-Object {
+            [PSCustomObject]@{
+                Path       = $_.Path
+                LineNumber = $_.LineNumber
+                LinkText   = if ($_.LinkText -match '^[=@+-]') { "'$($_.LinkText)" } else { $_.LinkText }
+                URL        = if ($_.URL -match '^[=@+-]') { "'$($_.URL)" } else { $_.URL }
+            }
+        }
+        $CsvData | Export-Csv -Path $OutputPath -Encoding UTF8 -NoTypeInformation
         Write-Host "Results saved to $OutputPath"
     }
 } catch {

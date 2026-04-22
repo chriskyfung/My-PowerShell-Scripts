@@ -11,7 +11,7 @@ Describe "Get-TheBrainNotesLinks.ps1" {
     $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "Test-GetTheBrainLinks") -Force
     $thought1Dir = New-Item -Path (Join-Path $tempDir "Thought1") -ItemType Directory
     $thought2Dir = New-Item -Path (Join-Path $tempDir "Thought2") -ItemType Directory
-    $backupDir = New-Item -Path (Join-Path $tempDir "Backup") -ItemType Directory
+    $backupDir = New-Item -ItemType Directory -Path (Join-Path $tempDir "Backup") -Force
     $thought3Dir = New-Item -Path (Join-Path $backupDir "Thought3") -ItemType Directory
 
     # # Create dummy Notes.md files
@@ -87,6 +87,63 @@ Describe "Get-TheBrainNotesLinks.ps1" {
       $csvContent = Import-Csv -Path $outputCsv
       $csvContent.URL | Should -Be "https://www.google.com"
 
+      Remove-Item -Path $outputCsv -Force
+    }
+
+    It "should sanitize fields to prevent CSV injection" {
+      $maliciousLinkText = '=HYPERLINK("cmd.exe","/c dir")'
+      $maliciousURL = '+A1+B1'
+      $maliciousContent = "This note contains a [$maliciousLinkText]($maliciousURL)."
+      $maliciousNotesDir = New-Item -ItemType Directory -Path (Join-Path $tempDir "ThoughtMalicious") -Force
+      $maliciousNotesFile = Join-Path $maliciousNotesDir "Notes.md"
+      Set-Content -Path $maliciousNotesFile -Value $maliciousContent
+
+      # Mock Get-ChildItem
+      Mock Get-ChildItem {
+            param($Path, $Filter, $Recurse, $Directory, $Exclude)
+            if ($Filter -eq 'Notes.md') {
+                # This is the call that searches for Notes.md files
+                return @(Get-Item $maliciousNotesFile)
+            }
+            if ($Directory) {
+                # This is the call that gets the base directory for thebrain notes
+                return New-Item -ItemType Directory -Path (Join-Path $tempDir "ThoughtMalicious") -Force
+            }
+            return $null # Default for other Get-ChildItem calls
+        }
+
+      # Mock Select-String to return the malicious link
+      Mock Select-String {
+            [PSCustomObject]@{
+                Path       = $maliciousNotesFile
+                LineNumber = 1
+                Matches    = @(
+                    [PSCustomObject]@{ # This is a single 'Match' object
+                        Groups = @(
+                            [PSCustomObject]@{ Value = "$maliciousLinkText($maliciousURL)" }, # Group 0 (full match, approximate)
+                            [PSCustomObject]@{ Value = $maliciousLinkText }, # Group 1
+                            [PSCustomObject]@{ Value = $maliciousURL }      # Group 2
+                        )
+                    }
+                )
+            }
+        } -ParameterFilter { $_.FullName -eq $maliciousNotesFile }
+
+
+      $outputCsv = Join-Path $tempDir "malicious_links.csv"
+      & $script:ScriptPath -Path $tempDir -OutputPath $outputCsv
+
+      Test-Path $outputCsv | Should -Be $true
+      $importedCsv = Import-Csv -Path $outputCsv
+
+      # The first (and only) data row should be the malicious one
+      $maliciousRow = $importedCsv[0]
+
+      $maliciousRow.LinkText | Should -Be "'$maliciousLinkText"
+      $maliciousRow.URL | Should -Be "'$maliciousURL"
+
+      Remove-Item -Path $maliciousNotesFile -Force
+      Remove-Item -Path $maliciousNotesDir -Force
       Remove-Item -Path $outputCsv -Force
     }
   }
