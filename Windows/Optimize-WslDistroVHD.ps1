@@ -258,7 +258,7 @@ function Stop-WslDistro {
         $caption = "Stop WSL Distro"
         $message = "WSL distro '$DistroName' is currently running.`n`nIt must be stopped before optimizing the VHDX file.`n`nDo you want to continue?"
 
-        if ($PSCmdlet.ShouldContinue($message, $caption, @{ Force = [bool]$Force })) {
+        if ($Force -or $PSCmdlet.ShouldContinue($message, $caption)) {
             if ($PSCmdlet.ShouldProcess("WSL distro: $DistroName", "Terminate")) {
                 Write-Verbose "Terminating WSL distro: $DistroName"
                 Invoke-WslCommand -Arguments @('--terminate', $DistroName) | Out-Null
