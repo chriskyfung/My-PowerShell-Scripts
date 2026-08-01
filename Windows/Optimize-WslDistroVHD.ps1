@@ -325,7 +325,7 @@ function Start-WslDistroVhdOptimization {
 
             if ($allDistros.Count -eq 0) {
                 Write-Warning "No WSL distros were found. Ensure WSL is installed and has at least one distro."
-                exit 0
+                return
             }
 
             # Filter by DistroName if specified
@@ -402,8 +402,7 @@ function Start-WslDistroVhdOptimization {
         Write-Host "`nAll selected WSL distro VHDX optimizations completed." -ForegroundColor Green
     }
     catch {
-        Write-Error "An error occurred while optimizing WSL distro VHDX files: $($_.Exception.Message)"
-        exit 1
+        throw "An error occurred while optimizing WSL distro VHDX files: $($_.Exception.Message)"
     }
 }
 
