@@ -115,7 +115,8 @@ function Get-WslDistroList {
 
     $distros = @()
     foreach ($line in $wslOutput) {
-        $trimmed = $line.Trim()
+        # Strip NUL bytes: wsl.exe may output UTF-16 with null bytes between characters
+        $trimmed = $line -replace '\x00', '' | ForEach-Object { $_.Trim() }
         if (-not [string]::IsNullOrWhiteSpace($trimmed)) {
             $distros += $trimmed
         }
