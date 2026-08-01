@@ -169,19 +169,38 @@ function Get-WslDistroVhdPath {
     # Fallback: search common locations
     Write-Verbose "Falling back to common locations..."
 
-    # Search the WSL package folders, scoping to the requested distro name
+    # Search the WSL package folders, scoping to the requested distro name.
+    # Package folder names embed publisher metadata (e.g. "CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc"),
+    # so a loose substring match can be ambiguous when distro names share prefixes
+    # (e.g. "Ubuntu" vs "Ubuntu-20.04"). Prefer an exact segment match, then fall back
+    # to a substring match only when it is unambiguous.
     $packagePattern = Join-Path -Path $env:LOCALAPPDATA -ChildPath "Packages\*\LocalState\ext4.vhdx"
     $resolved = Resolve-Path -Path $packagePattern -ErrorAction SilentlyContinue
     if ($resolved) {
+        # First pass: exact segment match (split on '.' and '_' which delimit package name parts)
         foreach ($vhdx in $resolved) {
-            # Match the package folder name against the distro name (case-insensitive)
             $packagePath = Split-Path -Path (Split-Path -Path $vhdx.Path -Parent) -Parent
             $packageName = Split-Path -Path $packagePath -Leaf
-            if ($packageName -like "*$DistroName*") {
-                Write-Verbose "Found VHDX via fallback: $($vhdx.Path)"
+            if (($packageName -split '[._]') -contains $DistroName) {
+                Write-Verbose "Found VHDX via fallback (exact segment match): $($vhdx.Path)"
                 return $vhdx.Path
             }
         }
+
+        # Second pass: substring match, but only if it resolves to exactly one VHDX
+        $matched = @($resolved | Where-Object {
+                $packagePath = Split-Path -Path (Split-Path -Path $_.Path -Parent) -Parent
+                $packageName = Split-Path -Path $packagePath -Leaf
+                $packageName -like "*$DistroName*"
+            })
+        if ($matched.Count -eq 1) {
+            Write-Verbose "Found VHDX via fallback: $($matched[0].Path)"
+            return $matched[0].Path
+        }
+        if ($matched.Count -gt 1) {
+            throw "Multiple WSL VHDX files matched distro '$DistroName'. Found: $($matched.Path -join ', ')"
+        }
+
         # If multiple distros exist but none matched, report the ambiguity
         if ($resolved.Count -gt 1) {
             throw "Multiple WSL VHDX files found but none matched distro '$DistroName'. Found: $($resolved.Path -join ', ')"
