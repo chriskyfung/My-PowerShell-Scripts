@@ -92,6 +92,71 @@ Docker Desktop VHDX optimization completed successfully.
 
 ---
 
+### Optimize-WslDistroVHD.ps1
+
+Optimizes WSL distro virtual hard disks (VHDX) to reclaim unused space.
+
+This script discovers installed WSL distros, locates their `ext4.vhdx` files (via the Windows registry or common locations), and compacts them using the `Optimize-VHD` cmdlet. Before running, it will:
+1. List all installed WSL distros
+2. Prompt for which distro(s) to optimize (or use `-DistroName` / `-VhdPath`)
+3. Prompt for confirmation to stop the target distro
+4. Use `Optimize-VHD` cmdlet to compact the VHDX file
+
+**Usage:**
+
+```powershell
+# Interactive selection
+.\Optimize-WslDistroVHD.ps1
+
+# Optimize a specific distro by name
+.\Optimize-WslDistroVHD.ps1 -DistroName "Ubuntu-20.04"
+
+# Optimize a custom VHDX path
+.\Optimize-WslDistroVHD.ps1 -VhdPath "D:\WSL\Ubuntu\ext4.vhdx"
+
+# Use Retain mode (faster)
+.\Optimize-WslDistroVHD.ps1 -Mode Retain
+
+# Preview without executing
+.\Optimize-WslDistroVHD.ps1 -WhatIf
+
+# Verbose output
+.\Optimize-WslDistroVHD.ps1 -Verbose
+```
+
+**Parameters:**
+
+| Parameter     | Type   | Default | Description                                      |
+|---------------|--------|---------|--------------------------------------------------|
+| `-DistroName` | String | Auto    | Name of the WSL distro to optimize               |
+| `-VhdPath`    | String | Auto    | Path to the VHDX file (overrides auto-discovery) |
+| `-Mode`       | String | Full    | Optimization mode: `Full`, `Retain`, or `None`   |
+| `-WhatIf`     | Switch | -       | Shows what would happen without executing        |
+| `-Verbose`    | Switch | -       | Displays detailed operation messages             |
+
+**Example Output:**
+
+```
+Optimizing: Ubuntu-20.04
+VHDX Path: C:\WSL\Ubuntu\ext4.vhdx
+Initial VHDX file size: 10240 MB
+WSL distro 'Ubuntu-20.04' is currently running.
+
+It must be stopped before optimizing the VHDX file.
+
+Do you want to continue?
+[Y] Yes  [N] No  [?] Help
+
+WSL distro 'Ubuntu-20.04' has been stopped.
+Optimizing VHDX file in Full mode...
+Final VHDX file size:   5120 MB
+Space reclaimed:        5120 MB (50.00%)
+Optimization completed for 'Ubuntu-20.04'.
+
+All selected WSL distro VHDX optimizations completed.
+```
+
+
 ## Running the Scripts
 
 1. Open PowerShell as Administrator
