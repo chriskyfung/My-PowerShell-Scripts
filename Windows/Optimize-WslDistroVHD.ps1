@@ -64,6 +64,9 @@ param (
 
     [Parameter(Mandatory = $false)]
     [ValidateScript({
+            if ([string]::IsNullOrWhiteSpace($_)) {
+                return $true
+            }
             if (-not (Test-Path -Path $_ -PathType Leaf)) {
                 throw "VHDX file not found: $_"
             }
@@ -296,6 +299,9 @@ function Start-WslDistroVhdOptimization {
         [string]$DistroName,
         [switch]$Force,
         [ValidateScript({
+                if ([string]::IsNullOrWhiteSpace($_)) {
+                    return $true
+                }
                 if (-not (Test-Path -Path $_ -PathType Leaf)) {
                     throw "VHDX file not found: $_"
                 }
