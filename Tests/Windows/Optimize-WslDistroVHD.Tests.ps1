@@ -234,5 +234,10 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
       $scriptContent = Get-Content -Path $script:ScriptPath -Raw
       $scriptContent | Should -Match "SupportsShouldProcess\s*=\s*\`$true"
     }
+
+    It "Should not call Optimize-VHD when -WhatIf is used" {
+      Start-WslDistroVhdOptimization -VhdPath $script:TestVhdPath -Mode Full -WhatIf
+      Should -Invoke Optimize-VHD -Times 0 -Scope It
+    }
   }
 }
