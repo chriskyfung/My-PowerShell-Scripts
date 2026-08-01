@@ -126,9 +126,10 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
       $env:LOCALAPPDATA = $env:TEMP
 
       # Create a temporary fake VHDX file for testing
+      # (zero-byte placeholder — New-VHD requires Hyper-V, which isn't available on CI runners)
       $testVhdPath = Join-Path $env:TEMP "test-wsl-distro.vhdx"
       if (-not (Test-Path -Path $testVhdPath)) {
-        New-VHD -Path $testVhdPath -SizeBytes 3MB -Dynamic
+        $null | Set-Content -Path $testVhdPath -Encoding Byte
       }
 
       $script:TestVhdPath = $testVhdPath
@@ -152,11 +153,12 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
       $WhatIfPreference = $false
       try {
         { Start-WslDistroVhdOptimization -VhdPath $script:TestVhdPath -Mode Full } | Should -Not -Throw
-        Assert-MockCalled Optimize-VHD -Times 1 -Scope It
       }
       finally {
         $WhatIfPreference = $OriginalWhatIfPreference
       }
+
+      Assert-MockCalled Optimize-VHD -Times 1 -Scope It
     }
 
     It "Should accept custom VHDX path" {
@@ -170,11 +172,12 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
       $WhatIfPreference = $false
       try {
         { Start-WslDistroVhdOptimization -VhdPath $script:TestVhdPath -Mode Full } | Should -Not -Throw
-        Assert-MockCalled Optimize-VHD -Times 1 -Scope It
       }
       finally {
         $WhatIfPreference = $OriginalWhatIfPreference
       }
+
+      Assert-MockCalled Optimize-VHD -Times 1 -Scope It
     }
 
     It "Should call Optimize-VHD with correct parameters" {
