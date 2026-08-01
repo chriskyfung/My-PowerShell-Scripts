@@ -168,17 +168,33 @@ function Get-WslDistroVhdPath {
 
     # Fallback: search common locations
     Write-Verbose "Falling back to common locations..."
-    $commonPaths = @(
-        (Join-Path -Path $env:LOCALAPPDATA -ChildPath "Packages\*\LocalState\ext4.vhdx"),
-        (Join-Path -Path $env:LOCALAPPDATA -ChildPath "Microsoft\WindowsApps\$DistroName\ext4.vhdx")
-    )
 
-    foreach ($pattern in $commonPaths) {
-        $resolved = Resolve-Path -Path $pattern -ErrorAction SilentlyContinue
-        if ($resolved) {
-            Write-Verbose "Found VHDX via fallback: $resolved"
-            return $resolved.Path
+    # Search the WSL package folders, scoping to the requested distro name
+    $packagePattern = Join-Path -Path $env:LOCALAPPDATA -ChildPath "Packages\*\LocalState\ext4.vhdx"
+    $resolved = Resolve-Path -Path $packagePattern -ErrorAction SilentlyContinue
+    if ($resolved) {
+        foreach ($vhdx in $resolved) {
+            # Match the package folder name against the distro name (case-insensitive)
+            $packagePath = Split-Path -Path (Split-Path -Path $vhdx.Path -Parent) -Parent
+            $packageName = Split-Path -Path $packagePath -Leaf
+            if ($packageName -like "*$DistroName*") {
+                Write-Verbose "Found VHDX via fallback: $($vhdx.Path)"
+                return $vhdx.Path
+            }
         }
+        # If multiple distros exist but none matched, report the ambiguity
+        if ($resolved.Count -gt 1) {
+            throw "Multiple WSL VHDX files found but none matched distro '$DistroName'. Found: $($resolved.Path -join ', ')"
+        }
+        Write-Verbose "Found VHDX via fallback: $($resolved.Path)"
+        return $resolved.Path
+    }
+
+    # Fallback: direct WindowsApps path
+    $directPath = Join-Path -Path $env:LOCALAPPDATA -ChildPath "Microsoft\WindowsApps\$DistroName\ext4.vhdx"
+    if (Test-Path -Path $directPath -PathType Leaf) {
+        Write-Verbose "Found VHDX via fallback: $directPath"
+        return $directPath
     }
 
     throw "Could not locate VHDX file for distro '$DistroName' via registry or common locations."
@@ -330,9 +346,20 @@ function Start-WslDistroVhdOptimization {
         if ($VhdPath) {
             # Manual override: optimize the specified VHDX directly
             Write-Verbose "Using manual VHDX path: $VhdPath"
-            $targets += [PSCustomObject]@{
-                DistroName = [System.IO.Path]::GetFileNameWithoutExtension($VhdPath)
-                VhdPath    = $VhdPath
+            if ($DistroName) {
+                # Use the provided distro name so shutdown can be tied to the real distro
+                $targets += [PSCustomObject]@{
+                    DistroName = $DistroName
+                    VhdPath    = $VhdPath
+                }
+            }
+            else {
+                # No distro name provided — skip shutdown and warn the caller
+                Write-Warning "No -DistroName provided. Skipping WSL distro shutdown. Ensure the distro is already stopped before optimizing."
+                $targets += [PSCustomObject]@{
+                    DistroName = $null
+                    VhdPath    = $VhdPath
+                }
             }
         }
         else {
@@ -384,11 +411,16 @@ function Start-WslDistroVhdOptimization {
             $initialSizeMB = [math]::Round($initialSize / 1MB, 2)
             Write-Host "Initial VHDX file size: $initialSizeMB MB"
 
-            # Stop the distro if running
-            $stopped = Stop-WslDistro -DistroName $target.DistroName -Force:$Force
-            if ($stopped -eq $false) {
-                Write-Warning "Cannot optimize '$($target.DistroName)' because it is still running. Skipping."
-                continue
+            # Stop the distro if running (skip when no distro name is known, e.g. manual -VhdPath without -DistroName)
+            if ($target.DistroName) {
+                $stopped = Stop-WslDistro -DistroName $target.DistroName -Force:$Force
+                if ($stopped -eq $false) {
+                    Write-Warning "Cannot optimize '$($target.DistroName)' because it is still running. Skipping."
+                    continue
+                }
+            }
+            else {
+                Write-Verbose "No distro name available; skipping WSL distro shutdown."
             }
 
             # Optimize VHDX
