@@ -210,13 +210,13 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
 
     It "Should throw when VHDX file not found" {
       $nonExistentPath = Join-Path $env:TEMP "non-existent.vhdx"
-      { & $script:ScriptPath -VhdPath $nonExistentPath } | Should -Throw
+      { Start-WslDistroVhdOptimization -VhdPath $nonExistentPath } | Should -Throw
     }
 
     It "Should throw when file is not .vhdx extension" {
       $invalidPath = Join-Path $env:TEMP "invalid.txt"
       "" | Set-Content -Path $invalidPath
-      { & $script:ScriptPath -VhdPath $invalidPath } | Should -Throw
+      { Start-WslDistroVhdOptimization -VhdPath $invalidPath } | Should -Throw
       Remove-Item -Path $invalidPath -Force
     }
   }

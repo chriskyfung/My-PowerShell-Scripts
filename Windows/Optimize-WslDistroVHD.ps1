@@ -295,6 +295,15 @@ function Start-WslDistroVhdOptimization {
     param (
         [string]$DistroName,
         [switch]$Force,
+        [ValidateScript({
+                if (-not (Test-Path -Path $_ -PathType Leaf)) {
+                    throw "VHDX file not found: $_"
+                }
+                if ([System.IO.Path]::GetExtension($_) -ne '.vhdx') {
+                    throw "File must be a .vhdx file"
+                }
+                return $true
+            })]
         [string]$VhdPath,
         [ValidateSet('Full', 'Retain', 'None')]
         [string]$Mode = 'Full'
