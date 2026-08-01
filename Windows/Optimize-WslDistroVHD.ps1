@@ -165,8 +165,8 @@ function Get-WslDistroVhdPath {
     # Fallback: search common locations
     Write-Verbose "Falling back to common locations..."
     $commonPaths = @(
-        Join-Path -Path $env:LOCALAPPDATA -ChildPath "Packages\*\LocalState\ext4.vhdx",
-        Join-Path -Path $env:LOCALAPPDATA -ChildPath "Microsoft\WindowsApps\$DistroName\ext4.vhdx"
+        (Join-Path -Path $env:LOCALAPPDATA -ChildPath "Packages\*\LocalState\ext4.vhdx"),
+        (Join-Path -Path $env:LOCALAPPDATA -ChildPath "Microsoft\WindowsApps\$DistroName\ext4.vhdx")
     )
 
     foreach ($pattern in $commonPaths) {
