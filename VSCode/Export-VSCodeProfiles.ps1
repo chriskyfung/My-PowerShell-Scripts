@@ -37,16 +37,19 @@ Previews the export operation without creating any files.
     License:        GNU GPLv3 license
     Creation Date:  2026-07-21
     Last Modified:  2026-07-21
+    Prerequisite:   PowerShell 5.0+
+    Requirements:   VS Code CLI ('code' command) must be in PATH
 #>
+
+#Requires -Version 5.0
+#Requires -PSEdition Desktop
 
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
     [Parameter(Mandatory = $false, Position = 0)]
-    [ValidateScript({ if ($_ -match '[\\/:*?"<>|]') { throw "Output directory path contains invalid characters." }; $_ })]
     [string]$OutputDirectory,
 
     [Parameter(Mandatory = $false)]
-    [ValidateScript({ if (-not (Test-Path $_ -PathType Container)) { throw "VS Code user data directory not found: $_" } })]
     [string]$VSCodeUserDataPath = "$env:APPDATA\Code\User"
 )
 
@@ -54,76 +57,86 @@ begin {
     Set-StrictMode -Version Latest
     $ErrorActionPreference = 'Stop'
 
-    $script:StorageJsonPath = Join-Path -Path $VSCodeUserDataPath -ChildPath "globalStorage\storage.json"
-    $script:Timestamp = Get-Date -Format 'yyyy-MM-dd'
+    $storageJsonPath = Join-Path -Path $VSCodeUserDataPath -ChildPath "globalStorage\storage.json"
+    $timestamp = Get-Date -Format 'yyyy-MM-dd'
+    $settingsFiles = @("settings.json", "keybindings.json")
 }
 
 process {
     try {
         #region Validate Prerequisites
-        if (-not (Test-Path $script:StorageJsonPath -PathType Leaf)) {
-            throw "VS Code storage.json not found at '$script:StorageJsonPath'. Is VS Code installed and have profiles been created?"
+        if (-not (Test-Path $VSCodeUserDataPath -PathType Container)) {
+            throw "VS Code user data directory not found: $VSCodeUserDataPath"
+        }
+
+        if (-not (Test-Path $storageJsonPath -PathType Leaf)) {
+            throw "VS Code storage.json not found at '$storageJsonPath'. Is VS Code installed and have profiles been created?"
         }
 
         if (-not (Get-Command code -ErrorAction SilentlyContinue)) {
             throw "VS Code CLI ('code') is not available in PATH. Install it via VS Code Command Palette: 'Shell Command: Install code command in PATH'."
         }
 
-        $script:OutputDir = if ($OutputDirectory) {
+        $outputDir = if ($OutputDirectory) {
             [System.IO.Path]::GetFullPath($OutputDirectory)
         }
         else {
             $documentsPath = [Environment]::GetFolderPath('MyDocuments')
-            Join-Path -Path $documentsPath -ChildPath "vscode-export-$($script:Timestamp)"
+            Join-Path -Path $documentsPath -ChildPath "vscode-export-$timestamp"
         }
 
-        $script:ExtensionsDir = Join-Path -Path $script:OutputDir -ChildPath "extensions"
+        $extensionsDir = Join-Path -Path $outputDir -ChildPath "extensions"
         #endregion
 
         #region Initialize Output Directory
-        if ($PSCmdlet.ShouldProcess($script:OutputDir, "Create export directory")) {
-            New-Item -ItemType Directory -Path $script:ExtensionsDir -Force | Out-Null
+        if ($PSCmdlet.ShouldProcess($outputDir, "Create export directory")) {
+            New-Item -ItemType Directory -Path $extensionsDir -Force | Out-Null
             Write-Host "=== VS Code Profile Export ===" -ForegroundColor Cyan
-            Write-Host "Output: $script:OutputDir`n"
+            Write-Host "Output: $outputDir`n"
         }
         #endregion
 
         #region Step 1: Save Profile Metadata
-        if ($PSCmdlet.ShouldProcess($script:StorageJsonPath, "Copy profile metadata")) {
-            Copy-Item -Path $script:StorageJsonPath -Destination (Join-Path $script:OutputDir "storage.json") -Force
+        if ($PSCmdlet.ShouldProcess($storageJsonPath, "Copy profile metadata")) {
+            Copy-Item -Path $storageJsonPath -Destination (Join-Path $outputDir "storage.json") -Force
             Write-Host "[✓] Saved storage.json"
         }
         #endregion
 
         #region Step 2: Discover Profiles
-        if ($PSCmdlet.ShouldProcess("Discovering VS Code profiles")) {
-            $profileData = Get-Content -Path $script:StorageJsonPath -Raw | ConvertFrom-Json
-            $script:Profiles = @("Default") + ($profileData.userDataProfiles | Select-Object -ExpandProperty name | Where-Object { $_ -ne "Default" })
-
-            if (-not $script:Profiles -or $script:Profiles.Count -eq 0) {
-                Write-Warning "No profiles found in storage.json."
-                return
-            }
-
-            Write-Host "[✓] Found profiles: $($script:Profiles -join ', ')"
-            Write-Host ""
+        $profileData = Get-Content -Path $storageJsonPath -Raw | ConvertFrom-Json
+        $userProfiles = @()
+        if ($profileData.PSObject.Properties['userDataProfiles']) {
+            $userProfiles = @($profileData.userDataProfiles | Select-Object -ExpandProperty name | Where-Object { $_ -ne "Default" })
         }
+        $profiles = @("Default") + $userProfiles
+
+        if ($userProfiles.Count -eq 0) {
+            Write-Warning "No additional profiles found in storage.json. Exporting 'Default' profile only."
+        }
+
+        Write-Host "[✓] Found profiles: $($profiles -join ', ')"
+        Write-Host ""
         #endregion
 
         #region Step 3: Export Extensions Per Profile
-        $script:Manifest = @{ profiles = @() }
+        $manifest = @{ profiles = @() }
 
-        foreach ($profile in $script:Profiles) {
-            $safeProfileName = $profile -replace '[\s/\\]', '_'
-            $outputFilePath = Join-Path -Path $script:ExtensionsDir -ChildPath "$safeProfileName.txt"
+        foreach ($profileName in $profiles) {
+            $safeProfileName = $profileName -replace '[\s/\\]', '_'
+            $outputFilePath = Join-Path -Path $extensionsDir -ChildPath "$safeProfileName.txt"
 
-            if ($PSCmdlet.ShouldProcess("Exporting extensions for profile '$profile'")) {
-                Write-Host "  Exporting: $profile"
+            if ($PSCmdlet.ShouldProcess("Exporting extensions for profile '$profileName'")) {
+                Write-Host "  Exporting: $profileName"
 
-                $extensions = @(code --list-extensions --profile $profile 2>$null)
-
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Warning "Failed to list extensions for profile '$profile'. Skipping."
+                try {
+                    $extensions = @(code --list-extensions --profile $profileName 2>$null)
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "code exited with code $LASTEXITCODE"
+                    }
+                }
+                catch {
+                    Write-Warning "Failed to list extensions for profile '$profileName'. Skipping: $_"
                     continue
                 }
 
@@ -131,8 +144,8 @@ process {
                 $extensionCount = $extensions.Count
                 Write-Host "    $extensionCount extensions found"
 
-                $script:Manifest.profiles += @{
-                    name            = $profile
+                $manifest.profiles += @{
+                    name            = $profileName
                     extension_count = $extensionCount
                     extensions      = $extensions
                 }
@@ -145,10 +158,9 @@ process {
             Write-Host ""
             Write-Host "Saving global settings..."
 
-            $settingsFiles = @("settings.json", "keybindings.json")
             foreach ($fileName in $settingsFiles) {
                 $sourcePath = Join-Path -Path $VSCodeUserDataPath -ChildPath $fileName
-                $destinationPath = Join-Path -Path $script:OutputDir -ChildPath $fileName
+                $destinationPath = Join-Path -Path $outputDir -ChildPath $fileName
 
                 if (Test-Path -Path $sourcePath -PathType Leaf) {
                     Copy-Item -Path $sourcePath -Destination $destinationPath -Force
@@ -161,7 +173,7 @@ process {
 
             $snippetsSourcePath = Join-Path -Path $VSCodeUserDataPath -ChildPath "snippets"
             if (Test-Path -Path $snippetsSourcePath -PathType Container) {
-                Copy-Item -Path $snippetsSourcePath -Destination (Join-Path $script:OutputDir "snippets") -Recurse -Force
+                Copy-Item -Path $snippetsSourcePath -Destination (Join-Path $outputDir "snippets") -Recurse -Force
                 Write-Host "  [✓] snippets/"
             }
             else {
@@ -172,8 +184,8 @@ process {
 
         #region Step 5: Generate Manifest
         if ($PSCmdlet.ShouldProcess("Generating manifest.json")) {
-            $manifestPath = Join-Path -Path $script:OutputDir -ChildPath "manifest.json"
-            $script:Manifest | ConvertTo-Json -Depth 5 | Out-File -FilePath $manifestPath -Encoding UTF8
+            $manifestPath = Join-Path -Path $outputDir -ChildPath "manifest.json"
+            $manifest | ConvertTo-Json -Depth 5 | Out-File -FilePath $manifestPath -Encoding UTF8
             Write-Host ""
             Write-Host "[✓] Generated manifest.json"
         }
@@ -183,20 +195,16 @@ process {
         if ($PSCmdlet.ShouldProcess("Displaying summary")) {
             Write-Host ""
             Write-Host "=== Summary ===" -ForegroundColor Green
-            foreach ($profile in $script:Manifest.profiles) {
-                Write-Host "  $($profile.name): $($profile.extension_count) extensions"
+            foreach ($entry in $manifest.profiles) {
+                Write-Host "  $($entry.name): $($entry.extension_count) extensions"
             }
             Write-Host ""
-            Write-Host "Export complete: $script:OutputDir"
+            Write-Host "Export complete: $outputDir"
         }
         #endregion
     }
     catch {
-        Write-Error "Export failed: $_"
-        exit 1
+        Write-Error "Export failed: $_" -ErrorAction Continue
+        throw
     }
-}
-
-end {
-    # Cleanup if needed
 }
