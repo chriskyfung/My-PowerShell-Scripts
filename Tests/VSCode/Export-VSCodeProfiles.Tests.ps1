@@ -39,6 +39,12 @@ Describe "Export-VSCodeProfiles.ps1" {
         # Create fake settings files
         Set-Content -Path (Join-Path $testRoot "User\settings.json") -Value '{"editor.fontSize": 14}' -Encoding UTF8
         Set-Content -Path (Join-Path $testRoot "User\keybindings.json") -Value '[]' -Encoding UTF8
+
+        # Create a fake code.cmd that returns fake extensions
+        $script:CodePath = Join-Path $testRoot "code\code.cmd"
+        Set-Content -Path $script:CodePath -Value '@echo off
+echo ext1.vscode
+echo ext2.vscode' -Encoding ASCII
     }
 
     AfterAll {
@@ -49,11 +55,11 @@ Describe "Export-VSCodeProfiles.ps1" {
 
     Context "Parameter validation" {
         It "accepts a custom OutputDirectory" {
-            { & $script:ScriptPath -OutputDirectory (Join-Path $script:TestRoot "out") -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -WhatIf } | Should -Not -Throw
+            { & $script:ScriptPath -OutputDirectory (Join-Path $script:TestRoot "out") -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -CodeCommand $script:CodePath -WhatIf } | Should -Not -Throw
         }
 
         It "accepts a custom VSCodeUserDataPath" {
-            { & $script:ScriptPath -OutputDirectory (Join-Path $script:TestRoot "out2") -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -WhatIf } | Should -Not -Throw
+            { & $script:ScriptPath -OutputDirectory (Join-Path $script:TestRoot "out2") -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -CodeCommand $script:CodePath -WhatIf } | Should -Not -Throw
         }
 
         It "throws for invalid OutputDirectory characters" {
@@ -87,7 +93,7 @@ Describe "Export-VSCodeProfiles.ps1" {
     Context "Profile discovery" {
         It "discovers profiles from storage.json" {
             $outputDir = Join-Path $script:TestRoot "out_discover"
-            $output = (& $script:ScriptPath -OutputDirectory $outputDir -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -WhatIf 6>&1) | Out-String
+            $output = (& $script:ScriptPath -OutputDirectory $outputDir -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -CodeCommand $script:CodePath -WhatIf 6>&1) | Out-String
 
             $output | Should -Match "Found profiles: Default, Work, Personal"
             $outputDir | Should -Not -Exist
@@ -97,12 +103,8 @@ Describe "Export-VSCodeProfiles.ps1" {
     Context "Extension export" {
         It "exports extensions and manifest using a custom CodeCommand" {
             $outputDir = Join-Path $script:TestRoot "out_export"
-            $codePath = Join-Path $script:TestRoot "code\code.cmd"
-            Set-Content -Path $codePath -Value '@echo off
-echo ext1.vscode
-echo ext2.vscode' -Encoding ASCII
 
-            & $script:ScriptPath -OutputDirectory $outputDir -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -CodeCommand $codePath
+            & $script:ScriptPath -OutputDirectory $outputDir -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -CodeCommand $script:CodePath
 
             $outputDir | Should -Exist
             $manifest = Get-Content (Join-Path $outputDir "manifest.json") -Raw | ConvertFrom-Json
@@ -114,7 +116,7 @@ echo ext2.vscode' -Encoding ASCII
     Context "WhatIf behavior" {
         It "does not create output files when -WhatIf is specified" {
             $outputDir = Join-Path $script:TestRoot "out_whatif"
-            { & $script:ScriptPath -OutputDirectory $outputDir -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -WhatIf } | Should -Not -Throw
+            { & $script:ScriptPath -OutputDirectory $outputDir -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -CodeCommand $script:CodePath -WhatIf } | Should -Not -Throw
             $outputDir | Should -Not -Exist
         }
     }
