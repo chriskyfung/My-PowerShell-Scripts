@@ -1,103 +1,227 @@
 ﻿<#
 .SYNOPSIS
-    Exports all VS Code user profiles, extensions, settings, and snippets to a timestamped backup folder.
+Exports all VS Code profiles, extensions, settings, keybindings, and snippets to a structured backup folder.
 
 .DESCRIPTION
-    This script performs a comprehensive backup of Visual Studio Code configurations by:
-    - Exporting all user profiles and their installed extensions
-    - Copying global settings, keybindings, and snippets
-    - Generating a machine-readable manifest.json for programmatic restoration
+Performs a comprehensive backup of all Visual Studio Code user profiles. The script exports:
+- Profile metadata (storage.json)
+- Installed extensions per profile
+- Global settings (settings.json, keybindings.json)
+- Code snippets
+- A machine-readable manifest.json for restore automation
 
-    The output is saved to a timestamped folder in the user's Documents directory.
+.PARAMETER OutputDirectory
+Specifies the destination folder for the export. Defaults to a timestamped folder in the user's Documents directory. Must not contain invalid Windows path characters (< > " | ? * or control characters).
 
-.PARAMETER WhatIf
-    Shows what would be exported without actually creating files.
+.PARAMETER VSCodeUserDataPath
+Specifies the VS Code user data directory. Defaults to the standard location for the current user.
+
+.PARAMETER CodeCommand
+Specifies the VS Code CLI command to use. Defaults to 'code'. Override this for testing or when the CLI is installed under a different name.
 
 .EXAMPLE
-    .\Export-VSCodeProfiles.ps1
+.\Export-VSCodeProfiles.ps1
 
-    Exports all VS Code profiles to C:\Users\username\Documents\vscode-export-2026-06-01
+Exports all VS Code profiles to a timestamped folder in Documents.
 
 .EXAMPLE
-    .\Export-VSCodeProfiles.ps1 -WhatIf
+.\Export-VSCodeProfiles.ps1 -OutputDirectory "C:\Backups\VSCode"
 
-    Displays what would be exported without making changes.
+Exports all profiles to the specified directory.
+
+.EXAMPLE
+.\Export-VSCodeProfiles.ps1 -WhatIf
+
+Previews the export operation without creating any files.
 
 .NOTES
-    Version:        1.0.0
-    Author:         chriskyfung, Claude Sonnet 4.6, Laguna M.1
+    Version:        1.1.0
+    Author:         @chriskyfung, Claude Sonnet 4.6, DeepSeek V4 Flash, Laguna M.1, Step 3.7 Flash
     License:        GNU GPLv3 license
-    Creation Date:  2026-06-01
-    Last Modified:  2026-07-21
+    Creation Date:  2026-07-21
+    Last Modified:  2026-08-06
     Prerequisite:   PowerShell 5.0+
-    Requirements:   VS Code CLI ('code' command) must be in PATH
+    Requirements:   VS Code CLI ('code' command) must be in PATH unless overridden via -CodeCommand
 #>
 
 #Requires -Version 5.0
 #Requires -PSEdition Desktop
 
-[CmdletBinding()]
-
-# Script-level error handling
-$ErrorActionPreference = 'Stop'
-
-try {
-    $VSCodeUserDir = "$env:APPDATA\Code\User"
-    $StorageJson = "$VSCodeUserDir\globalStorage\storage.json"
-    $OutputDir = "$([Environment]::GetFolderPath('MyDocuments'))\vscode-export-$(Get-Date -Format 'yyyy-MM-dd')"
-
-    New-Item -ItemType Directory -Force -Path "$OutputDir\extensions" | Out-Null
-    Write-Host "=== VS Code Profile Export ===" -ForegroundColor Cyan
-    Write-Host "Output: $OutputDir`n"
-
-    # Step 1: Save profile metadata
-    Copy-Item $StorageJson "$OutputDir\storage.json"
-    Write-Host "[✓] Saved storage.json"
-
-    # Step 2: Auto-discover profiles
-    $json = Get-Content $StorageJson | ConvertFrom-Json
-    $VSCodeProfiles = @("Default") + ($json.userDataProfiles | Select-Object -ExpandProperty name)
-    Write-Host "[✓] Found profiles: $($VSCodeProfiles -join ', ')`n"
-
-    # Step 3: Export extensions per profile
-    $Manifest = @{ profiles = @() }
-
-    foreach ($VSCodeProfile in $VSCodeProfiles) {
-        $SafeName = $VSCodeProfile -replace '[\s/\\]', '_'
-        $OutFile = "$OutputDir\extensions\$SafeName.txt"
-
-        Write-Host "  Exporting: $VSCodeProfile"
-        $Exts = code --list-extensions --profile $VSCodeProfile 2>$null
-        $Exts | Out-File $OutFile -Encoding UTF8
-
-        Write-Host "    $($Exts.Count) extensions found"
-        $Manifest.profiles += @{ name = $VSCodeProfile; extension_count = $Exts.Count; extensions = $Exts }
-    }
-
-    # Step 4: Save global settings
-    Write-Host "`nSaving global settings..."
-    foreach ($File in @("settings.json", "keybindings.json")) {
-        $Src = "$VSCodeUserDir\$File"
-        if (Test-Path $Src) {
-            Copy-Item $Src "$OutputDir\$File"
-            Write-Host "  [✓] $File"
+[CmdletBinding(SupportsShouldProcess = $true)]
+param (
+    [Parameter(Mandatory = $false, Position = 0)]
+    [ValidateScript({
+        if ($_ -match '[<>"|?*\x00-\x1F]') {
+            throw "OutputDirectory contains invalid path characters: '$_'"
         }
-    }
-    if (Test-Path "$VSCodeUserDir\snippets") {
-        Copy-Item "$VSCodeUserDir\snippets" "$OutputDir\snippets" -Recurse
-        Write-Host "  [✓] snippets/"
-    }
+        $true
+    })]
+    [string]$OutputDirectory,
 
-    # Step 5: Write manifest
-    $Manifest | ConvertTo-Json -Depth 5 | Out-File "$OutputDir\manifest.json" -Encoding UTF8
-    Write-Host "`n[✓] Generated manifest.json"
+    [Parameter(Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
+    [string]$VSCodeUserDataPath = "$env:APPDATA\Code\User",
 
-    Write-Host "`n=== Summary ===" -ForegroundColor Green
-    $Manifest.profiles | ForEach-Object { Write-Host "  $($_.name): $($_.extension_count) extensions" }
-    Write-Host "`nExport complete: $OutputDir"
+    [Parameter(Mandatory = $false)]
+    [string]$CodeCommand = "code"
+)
 
+begin {
+    Set-StrictMode -Version Latest
+    $ErrorActionPreference = 'Stop'
+
+    $timestamp = Get-Date -Format 'yyyy-MM-dd'
+    $settingsFiles = @("settings.json", "keybindings.json")
+
+    $invalidFileNameChars = [IO.Path]::GetInvalidFileNameChars() -as [string[]]
+    $escapedInvalidChars = $invalidFileNameChars | ForEach-Object { [Regex]::Escape($_) }
+    $regexPattern = '[' + ($escapedInvalidChars -join '') + ']'
 }
-catch {
-    Write-Error "An error occurred: $($_.Exception.Message)"
-    exit 1
+
+process {
+    try {
+        #region Validate Prerequisites
+        if (-not (Test-Path $VSCodeUserDataPath -PathType Container)) {
+            throw "VS Code user data directory not found: $VSCodeUserDataPath"
+        }
+
+        $storageJsonPath = Join-Path -Path $VSCodeUserDataPath -ChildPath "globalStorage\storage.json"
+
+        if (-not (Test-Path $storageJsonPath -PathType Leaf)) {
+            throw "VS Code storage.json not found at '$storageJsonPath'. Is VS Code installed and have profiles been created?"
+        }
+
+        if (-not (Get-Command $CodeCommand -ErrorAction SilentlyContinue)) {
+            throw "VS Code CLI ('$CodeCommand') is not available in PATH. Install it via VS Code Command Palette: 'Shell Command: Install code command in PATH'."
+        }
+
+        $outputDir = if ($OutputDirectory) {
+            [System.IO.Path]::GetFullPath($OutputDirectory)
+        }
+        else {
+            $documentsPath = [Environment]::GetFolderPath('MyDocuments')
+            Join-Path -Path $documentsPath -ChildPath "vscode-export-$timestamp"
+        }
+
+        $extensionsDir = Join-Path -Path $outputDir -ChildPath "extensions"
+        #endregion
+
+        #region Initialize Output Directory
+        if ($PSCmdlet.ShouldProcess($outputDir, "Create export directory")) {
+            New-Item -ItemType Directory -Path $extensionsDir -Force | Out-Null
+            Write-Host "=== VS Code Profile Export ===" -ForegroundColor Cyan
+            Write-Host "Output: $outputDir`n"
+        }
+        #endregion
+
+        #region Step 1: Save Profile Metadata
+        if ($PSCmdlet.ShouldProcess($storageJsonPath, "Copy profile metadata")) {
+            Copy-Item -Path $storageJsonPath -Destination (Join-Path $outputDir "storage.json") -Force
+            Write-Host "[✓] Saved storage.json"
+        }
+        #endregion
+
+        #region Step 2: Discover Profiles
+        $profileData = Get-Content -Path $storageJsonPath -Raw | ConvertFrom-Json
+        $userProfiles = @()
+        if ($profileData.PSObject.Properties['userDataProfiles']) {
+            $userProfiles = @($profileData.userDataProfiles | Select-Object -ExpandProperty name | Where-Object { $_ -ne "Default" })
+        }
+        $profiles = @("Default") + $userProfiles
+
+        if ($userProfiles.Count -eq 0) {
+            Write-Warning "No additional profiles found in storage.json. Exporting 'Default' profile only."
+        }
+
+        Write-Host "[✓] Found profiles: $($profiles -join ', ')"
+        Write-Host ""
+        #endregion
+
+        #region Step 3: Export Extensions Per Profile
+        $manifest = @{ profiles = @() }
+
+        foreach ($profileName in $profiles) {
+            $safeProfileName = $profileName -replace $regexPattern, '_'
+            $outputFilePath = Join-Path -Path $extensionsDir -ChildPath "$safeProfileName.txt"
+
+            Write-Host "  Exporting: $profileName"
+
+            try {
+                $extensions = @(& $CodeCommand --list-extensions --profile $profileName 2>&1 |
+                    Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] })
+                if ($LASTEXITCODE -ne 0) {
+                    throw "code CLI exited with code $LASTEXITCODE for profile '$profileName'"
+                }
+            }
+            catch {
+                Write-Warning "Failed to list extensions for profile '$profileName'. Skipping: $_"
+                continue
+            }
+
+            $extensionCount = $extensions.Count
+            Write-Host "    $extensionCount extensions found"
+
+            if ($PSCmdlet.ShouldProcess("Save extensions for profile '$profileName'")) {
+                $extensions | Out-File -FilePath $outputFilePath -Encoding UTF8
+            }
+
+            $manifest.profiles += @{
+                name            = $profileName
+                extension_count = $extensionCount
+                extensions      = $extensions
+            }
+        }
+        #endregion
+
+        #region Step 4: Save Global Settings
+        if ($PSCmdlet.ShouldProcess("Saving global settings")) {
+            Write-Host ""
+            Write-Host "Saving global settings..."
+
+            foreach ($fileName in $settingsFiles) {
+                $sourcePath = Join-Path -Path $VSCodeUserDataPath -ChildPath $fileName
+                $destinationPath = Join-Path -Path $outputDir -ChildPath $fileName
+
+                if (Test-Path -Path $sourcePath -PathType Leaf) {
+                    Copy-Item -Path $sourcePath -Destination $destinationPath -Force
+                    Write-Host "  [✓] $fileName"
+                }
+                else {
+                    Write-Verbose "File not found, skipping: $sourcePath"
+                }
+            }
+
+            $snippetsSourcePath = Join-Path -Path $VSCodeUserDataPath -ChildPath "snippets"
+            if (Test-Path -Path $snippetsSourcePath -PathType Container) {
+                Copy-Item -Path $snippetsSourcePath -Destination (Join-Path $outputDir "snippets") -Recurse -Force
+                Write-Host "  [✓] snippets/"
+            }
+            else {
+                Write-Verbose "Snippets folder not found, skipping."
+            }
+        }
+        #endregion
+
+        #region Step 5: Generate Manifest
+        if ($PSCmdlet.ShouldProcess("Generating manifest.json")) {
+            $manifestPath = Join-Path -Path $outputDir -ChildPath "manifest.json"
+            $manifest | ConvertTo-Json -Depth 5 | Out-File -FilePath $manifestPath -Encoding UTF8
+            Write-Host ""
+            Write-Host "[✓] Generated manifest.json"
+        }
+        #endregion
+
+        #region Summary
+        Write-Host ""
+        Write-Host "=== Summary ===" -ForegroundColor Green
+        foreach ($entry in $manifest.profiles) {
+            Write-Host "  $($entry.name): $($entry.extension_count) extensions"
+        }
+        Write-Host ""
+        Write-Host "$(if ($WhatIfPreference) { 'WhatIf - no files written to:' } else { 'Export complete:' }) $outputDir"
+        #endregion
+    }
+    catch {
+        throw
+    }
 }
