@@ -16,6 +16,9 @@ Specifies the destination folder for the export. Defaults to a timestamped folde
 .PARAMETER VSCodeUserDataPath
 Specifies the VS Code user data directory. Defaults to the standard location for the current user.
 
+.PARAMETER CodeCommand
+Specifies the VS Code CLI command to use. Defaults to 'code'. Override this for testing or when the CLI is installed under a different name.
+
 .EXAMPLE
 .\Export-VSCodeProfiles.ps1
 
@@ -50,7 +53,10 @@ param (
     [string]$OutputDirectory,
 
     [Parameter(Mandatory = $false)]
-    [string]$VSCodeUserDataPath = "$env:APPDATA\Code\User"
+    [string]$VSCodeUserDataPath = "$env:APPDATA\Code\User",
+
+    [Parameter(Mandatory = $false)]
+    [string]$CodeCommand = "code"
 )
 
 begin {
@@ -73,8 +79,8 @@ process {
             throw "VS Code storage.json not found at '$storageJsonPath'. Is VS Code installed and have profiles been created?"
         }
 
-        if (-not (Get-Command code -ErrorAction SilentlyContinue)) {
-            throw "VS Code CLI ('code') is not available in PATH. Install it via VS Code Command Palette: 'Shell Command: Install code command in PATH'."
+        if (-not (Get-Command $CodeCommand -ErrorAction SilentlyContinue)) {
+            throw "VS Code CLI ('$CodeCommand') is not available in PATH. Install it via VS Code Command Palette: 'Shell Command: Install code command in PATH'."
         }
 
         $outputDir = if ($OutputDirectory) {
@@ -130,7 +136,7 @@ process {
                 Write-Host "  Exporting: $profileName"
 
                 try {
-                    $extensions = @(code --list-extensions --profile $profileName 2>$null)
+                    $extensions = @(& $CodeCommand --list-extensions --profile $profileName 2>$null)
                     if ($LASTEXITCODE -ne 0) {
                         throw "code exited with code $LASTEXITCODE"
                     }

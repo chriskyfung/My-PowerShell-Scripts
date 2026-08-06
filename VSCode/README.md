@@ -105,6 +105,12 @@ Performs a comprehensive backup of all VS Code profiles, including extensions, s
 .\Export-VSCodeProfiles.ps1
 ```
 
+**Specify a custom VS Code CLI command:**
+
+```powershell
+.\Export-VSCodeProfiles.ps1 -CodeCommand "C:\Program Files\Microsoft VS Code\bin\code.cmd"
+```
+
 ### Output
 
 The script creates a folder named `vscode-export-YYYY-MM-DD` in your **My Documents** folder with the following structure:

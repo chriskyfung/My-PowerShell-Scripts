@@ -77,8 +77,9 @@ Describe "Export-VSCodeProfiles.ps1" {
         }
 
         It "throws when 'code' CLI is not in PATH" {
-            Mock -CommandName Get-Command -ParameterFilter { $Name -eq "code" } -MockWith { return $null }
-            { & $script:ScriptPath -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -WhatIf } | Should -Throw "VS Code CLI*not available*"
+            { & $script:ScriptPath -VSCodeUserDataPath (Join-Path $script:TestRoot "User") `
+                -CodeCommand "nonexistent_code_binary_xyz" -WhatIf } |
+                Should -Throw "VS Code CLI*not available*"
         }
     }
 
