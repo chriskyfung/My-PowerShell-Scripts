@@ -95,7 +95,7 @@ Performs a comprehensive backup of all VS Code profiles, including extensions, s
 
 - **Windows OS**
 - **PowerShell 5.0+** (Desktop Edition)
-- **VS Code CLI (`code`)** must be available in your system PATH
+- **VS Code CLI (`code`)** must be available in your system PATH (by default). You can specify a different command or path via the `-CodeCommand` parameter.
 
 ### Usage
 

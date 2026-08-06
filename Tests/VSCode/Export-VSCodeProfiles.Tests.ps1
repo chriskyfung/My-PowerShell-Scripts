@@ -87,11 +87,27 @@ Describe "Export-VSCodeProfiles.ps1" {
     Context "Profile discovery" {
         It "discovers profiles from storage.json" {
             $outputDir = Join-Path $script:TestRoot "out_discover"
-            $codePath = Join-Path $script:TestRoot "code\code.cmd"
-            Set-Content -Path $codePath -Value '@echo off' -Encoding ASCII
+            $output = (& $script:ScriptPath -OutputDirectory $outputDir -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -WhatIf 6>&1) | Out-String
 
-            & $script:ScriptPath -OutputDirectory $outputDir -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -WhatIf
+            $output | Should -Match "Found profiles: Default, Work, Personal"
             $outputDir | Should -Not -Exist
+        }
+    }
+
+    Context "Extension export" {
+        It "exports extensions and manifest using a custom CodeCommand" {
+            $outputDir = Join-Path $script:TestRoot "out_export"
+            $codePath = Join-Path $script:TestRoot "code\code.cmd"
+            Set-Content -Path $codePath -Value '@echo off
+echo ext1.vscode
+echo ext2.vscode' -Encoding ASCII
+
+            & $script:ScriptPath -OutputDirectory $outputDir -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -CodeCommand $codePath
+
+            $outputDir | Should -Exist
+            $manifest = Get-Content (Join-Path $outputDir "manifest.json") -Raw | ConvertFrom-Json
+            $manifest.profiles.name | Should -Contain "Default"
+            $manifest.profiles[0].extensions | Should -Contain "ext1.vscode"
         }
     }
 

@@ -41,7 +41,7 @@ Previews the export operation without creating any files.
     Creation Date:  2026-07-21
     Last Modified:  2026-07-21
     Prerequisite:   PowerShell 5.0+
-    Requirements:   VS Code CLI ('code' command) must be in PATH
+    Requirements:   VS Code CLI ('code' command) must be in PATH unless overridden via -CodeCommand
 #>
 
 #Requires -Version 5.0
