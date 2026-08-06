@@ -72,6 +72,10 @@ begin {
 
     $timestamp = Get-Date -Format 'yyyy-MM-dd'
     $settingsFiles = @("settings.json", "keybindings.json")
+
+    $invalidFileNameChars = [IO.Path]::GetInvalidFileNameChars() -as [string[]]
+    $escapedInvalidChars = $invalidFileNameChars | ForEach-Object { [Regex]::Escape($_) }
+    $regexPattern = '[' + ($escapedInvalidChars -join '') + ']'
 }
 
 process {
@@ -137,33 +141,34 @@ process {
         $manifest = @{ profiles = @() }
 
         foreach ($profileName in $profiles) {
-            $safeProfileName = $profileName -replace '[\s/\\]', '_'
+            $safeProfileName = $profileName -replace $regexPattern, '_'
             $outputFilePath = Join-Path -Path $extensionsDir -ChildPath "$safeProfileName.txt"
 
-            if ($PSCmdlet.ShouldProcess("Exporting extensions for profile '$profileName'")) {
-                Write-Host "  Exporting: $profileName"
+            Write-Host "  Exporting: $profileName"
 
-                try {
-                    $extensions = @(& $CodeCommand --list-extensions --profile $profileName 2>&1 |
-                        Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] })
-                    if ($LASTEXITCODE -ne 0) {
-                        throw "code CLI exited with code $LASTEXITCODE for profile '$profileName'"
-                    }
+            try {
+                $extensions = @(& $CodeCommand --list-extensions --profile $profileName 2>&1 |
+                    Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] })
+                if ($LASTEXITCODE -ne 0) {
+                    throw "code CLI exited with code $LASTEXITCODE for profile '$profileName'"
                 }
-                catch {
-                    Write-Warning "Failed to list extensions for profile '$profileName'. Skipping: $_"
-                    continue
-                }
+            }
+            catch {
+                Write-Warning "Failed to list extensions for profile '$profileName'. Skipping: $_"
+                continue
+            }
 
+            $extensionCount = $extensions.Count
+            Write-Host "    $extensionCount extensions found"
+
+            if ($PSCmdlet.ShouldProcess("Save extensions for profile '$profileName'")) {
                 $extensions | Out-File -FilePath $outputFilePath -Encoding UTF8
-                $extensionCount = $extensions.Count
-                Write-Host "    $extensionCount extensions found"
+            }
 
-                $manifest.profiles += @{
-                    name            = $profileName
-                    extension_count = $extensionCount
-                    extensions      = $extensions
-                }
+            $manifest.profiles += @{
+                name            = $profileName
+                extension_count = $extensionCount
+                extensions      = $extensions
             }
         }
         #endregion
@@ -217,7 +222,6 @@ process {
         #endregion
     }
     catch {
-        Write-Error "Export failed: $_" -ErrorAction Continue
         throw
     }
 }
