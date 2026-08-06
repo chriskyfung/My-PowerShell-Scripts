@@ -35,11 +35,11 @@ Exports all profiles to the specified directory.
 Previews the export operation without creating any files.
 
 .NOTES
-    Version:        1.0.0
-    Author:         chriskyfung, Claude Sonnet 4.6, Laguna M.1
+    Version:        1.1.0
+    Author:         @chriskyfung, Claude Sonnet 4.6, DeepSeek V4 Flash, Laguna M.1, Step 3.7 Flash
     License:        GNU GPLv3 license
     Creation Date:  2026-07-21
-    Last Modified:  2026-07-21
+    Last Modified:  2026-08-06
     Prerequisite:   PowerShell 5.0+
     Requirements:   VS Code CLI ('code' command) must be in PATH unless overridden via -CodeCommand
 #>

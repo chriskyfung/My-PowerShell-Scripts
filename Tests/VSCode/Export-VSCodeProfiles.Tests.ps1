@@ -7,9 +7,10 @@ Validates parameter handling, prerequisite checks, profile discovery,
 extension export, settings backup, manifest generation, and WhatIf behavior.
 
 .NOTES
-    Version:        1.0.0
-    Author:         chriskyfung
+    Version:        1.1.0
+    Author:         @chriskyfung, Claude Sonnet 4.6, DeepSeek V4 Flash, Laguna M.1, Step 3.7 Flash
     License:        GNU GPLv3 license
+    Last Modified:  2026-08-06
 #>
 
 #Requires -Version 5.0
