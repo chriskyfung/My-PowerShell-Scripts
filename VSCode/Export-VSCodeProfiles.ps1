@@ -59,6 +59,7 @@ param (
     [string]$OutputDirectory,
 
     [Parameter(Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
     [string]$VSCodeUserDataPath = "$env:APPDATA\Code\User",
 
     [Parameter(Mandatory = $false)]
@@ -69,7 +70,6 @@ begin {
     Set-StrictMode -Version Latest
     $ErrorActionPreference = 'Stop'
 
-    $storageJsonPath = Join-Path -Path $VSCodeUserDataPath -ChildPath "globalStorage\storage.json"
     $timestamp = Get-Date -Format 'yyyy-MM-dd'
     $settingsFiles = @("settings.json", "keybindings.json")
 }
@@ -80,6 +80,8 @@ process {
         if (-not (Test-Path $VSCodeUserDataPath -PathType Container)) {
             throw "VS Code user data directory not found: $VSCodeUserDataPath"
         }
+
+        $storageJsonPath = Join-Path -Path $VSCodeUserDataPath -ChildPath "globalStorage\storage.json"
 
         if (-not (Test-Path $storageJsonPath -PathType Leaf)) {
             throw "VS Code storage.json not found at '$storageJsonPath'. Is VS Code installed and have profiles been created?"
@@ -142,9 +144,10 @@ process {
                 Write-Host "  Exporting: $profileName"
 
                 try {
-                    $extensions = @(& $CodeCommand --list-extensions --profile $profileName 2>$null)
+                    $extensions = @(& $CodeCommand --list-extensions --profile $profileName 2>&1 |
+                        Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] })
                     if ($LASTEXITCODE -ne 0) {
-                        throw "code exited with code $LASTEXITCODE"
+                        throw "code CLI exited with code $LASTEXITCODE for profile '$profileName'"
                     }
                 }
                 catch {
@@ -204,15 +207,13 @@ process {
         #endregion
 
         #region Summary
-        if ($PSCmdlet.ShouldProcess("Displaying summary")) {
-            Write-Host ""
-            Write-Host "=== Summary ===" -ForegroundColor Green
-            foreach ($entry in $manifest.profiles) {
-                Write-Host "  $($entry.name): $($entry.extension_count) extensions"
-            }
-            Write-Host ""
-            Write-Host "Export complete: $outputDir"
+        Write-Host ""
+        Write-Host "=== Summary ===" -ForegroundColor Green
+        foreach ($entry in $manifest.profiles) {
+            Write-Host "  $($entry.name): $($entry.extension_count) extensions"
         }
+        Write-Host ""
+        Write-Host "$(if ($WhatIfPreference) { 'WhatIf - no files written to:' } else { 'Export complete:' }) $outputDir"
         #endregion
     }
     catch {
