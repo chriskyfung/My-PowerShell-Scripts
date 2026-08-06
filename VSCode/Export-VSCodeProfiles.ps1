@@ -11,7 +11,7 @@ Performs a comprehensive backup of all Visual Studio Code user profiles. The scr
 - A machine-readable manifest.json for restore automation
 
 .PARAMETER OutputDirectory
-Specifies the destination folder for the export. Defaults to a timestamped folder in the user's Documents directory.
+Specifies the destination folder for the export. Defaults to a timestamped folder in the user's Documents directory. Must not contain invalid Windows path characters (< > " | ? * or control characters).
 
 .PARAMETER VSCodeUserDataPath
 Specifies the VS Code user data directory. Defaults to the standard location for the current user.
@@ -50,6 +50,12 @@ Previews the export operation without creating any files.
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
     [Parameter(Mandatory = $false, Position = 0)]
+    [ValidateScript({
+        if ($_ -match '[<>"|?*\x00-\x1F]') {
+            throw "OutputDirectory contains invalid path characters: '$_'"
+        }
+        $true
+    })]
     [string]$OutputDirectory,
 
     [Parameter(Mandatory = $false)]

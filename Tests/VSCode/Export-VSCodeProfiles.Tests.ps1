@@ -57,7 +57,8 @@ Describe "Export-VSCodeProfiles.ps1" {
         }
 
         It "throws for invalid OutputDirectory characters" {
-            { & $script:ScriptPath -OutputDirectory "C:\bad|path" -WhatIf } | Should -Throw
+            { & $script:ScriptPath -OutputDirectory "C:\bad|path" -WhatIf } |
+                Should -Throw "*OutputDirectory contains invalid path characters*"
         }
     }
 
