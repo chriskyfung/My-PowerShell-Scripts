@@ -28,17 +28,17 @@
     Text file containing profile and extension information.
 
 .NOTES
-    Version:        1.0.0
-    Author:         chriskyfung, Claude Sonnet 4.6, Laguna M.1
+    Version:        1.1.0
+    Author:         @chriskyfung, Claude Sonnet 4.6, DeepSeek V4 Flash, Laguna M.1, Step 3.7 Flash
     License:        GNU GPLv3 license
     Creation Date:  2026-06-01
-    Last Modified:  2026-07-21
+    Last Modified:  2026-08-07
 #>
 
 #Requires -Version 5.0
-#Requires -PSEdition Desktop
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess)]
+param()
 
 # Script-level error handling
 $ErrorActionPreference = "Stop"
@@ -71,7 +71,7 @@ try {
         $lines.Add("Profile: $VSCodeProfile")
         $lines.Add("--------------------------------------------------")
 
-        $Exts = code --list-extensions --profile $VSCodeProfile 2>$null
+        $Exts = @(code --list-extensions --profile $VSCodeProfile 2>$null)
 
         if (-not $Exts) {
             $lines.Add("(no extensions installed)")
@@ -87,14 +87,19 @@ try {
     $lines.Add("==================================================")
     $lines.Add("End of export")
 
-    # --- Single write to disk ---
-    $lines | Out-File -FilePath $OutputFile -Encoding UTF8
+    # --- Single write to disk (honors -WhatIf) ---
+    if ($PSCmdlet.ShouldProcess($OutputFile, "Export VS Code profiles and extensions")) {
+        $lines | Out-File -FilePath $OutputFile -Encoding UTF8
+        Write-Host "[✓] Export complete: $OutputFile`n"
+    }
+    else {
+        Write-Host "[i] WhatIf: Output file would be written to $OutputFile`n"
+    }
 
     # --- Print summary to terminal ---
-    Write-Host "[✓] Export complete: $OutputFile`n"
     Write-Host "=== Summary ===" -ForegroundColor Green
     foreach ($VSCodeProfile in $VSCodeProfiles) {
-        $count = (code --list-extensions --profile $VSCodeProfile 2>$null).Count
+        $count = @(code --list-extensions --profile $VSCodeProfile 2>$null).Count
         Write-Host "  ${VSCodeProfile}: $count extension(s)"
     }
 }
