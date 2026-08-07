@@ -111,6 +111,14 @@ Describe "Export-VSCodeExtensionList.ps1" {
             $content = Get-Content -Path $script:ExpectedOutputFile -Raw
             $content | Should -Match "End of export"
         }
+
+        It "creates the output directory when it does not exist" {
+            $nestedDir = Join-Path $script:TestRoot "Nested\Output"
+            $nestedFile = Join-Path $nestedDir "vscode-profiles-export-$(Get-Date -Format 'yyyy-MM-dd').txt"
+            Remove-Item -Path $nestedDir -Recurse -Force -ErrorAction SilentlyContinue
+            & $script:ScriptPath -OutputDirectory $nestedDir | Out-Null
+            $nestedFile | Should -Exist
+        }
     }
 
     Context "Console summary output" {
@@ -129,6 +137,8 @@ Describe "Export-VSCodeExtensionList.ps1" {
             try {
                 # Run in a child process so the script's `exit 1` path
                 # (which follows its terminating Write-Error) sets $LASTEXITCODE.
+                # Assumption: the current host's PowerShell executable (from $PID)
+                # satisfies the script's `#Requires -Version 5.0` requirement.
                 $exePath = (Get-Process -Id $PID).Path
                 & $exePath -NoProfile -File $script:ScriptPath -OutputDirectory $script:OutputDir 2>$null | Out-Null
                 $LASTEXITCODE | Should -Be 1
