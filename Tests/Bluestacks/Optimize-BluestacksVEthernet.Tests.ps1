@@ -3,18 +3,11 @@
   Tests for the Optimize-BluestacksVEthernet.ps1 script.
 #>
 
+# Must be top-level: Pester Discovery evaluates -Skip: before BeforeAll runs.
+$script:SkipAll = ($PSEdition -eq 'Core') -or [bool]$env:CI
+
 Describe "Optimize-BluestacksVEthernet" -Tags "CI", "DesktopOnly" {
-
   BeforeAll {
-    # Skip this test group under PowerShell Core (7.x) because the script
-    # requires #Requires -PSEdition Desktop.
-    # Also skip in CI: GitHub-hosted runners run as admin, and the script under
-    # test calls many unmocked cmdlets (Disable-NetAdapter, Disable-NetAdapterBinding,
-    # etc.) that would execute against real network adapters and could disrupt the
-    # runner's network connectivity. This is a destructive integration test that
-    # must only run in a controlled, local environment.
-    $script:SkipAll = ($PSEdition -eq 'Core') -or [bool]$env:CI
-
     # Get the absolute path to the script under test
     $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\Bluestacks\Optimize-BluestacksVEthernet.ps1"
   }

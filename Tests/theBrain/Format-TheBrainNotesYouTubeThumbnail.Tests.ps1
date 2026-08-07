@@ -1,11 +1,12 @@
 # Test for Format-TheBrainNotesYouTubeThumbnail.ps1
 # Requires -Modules Pester
 
-BeforeAll {
-  # Skip this test group under PowerShell Core (7.x) because the script
-  # depends on Get-TheBrainDataDirectory.ps1 which requires #Requires -Modules PSSQLite
-  $script:SkipAll = $PSEdition -eq 'Core'
+# NOTE: Must be top-level (not inside BeforeAll) so Pester Discovery phase
+# can evaluate -Skip: expressions before BeforeAll runs.
+$script:SkipAll = $PSEdition -eq 'Core'
 
+
+BeforeAll {
   # Path to the script being tested
   $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\theBrain\Format-TheBrainNotesYouTubeThumbnail.ps1"
 

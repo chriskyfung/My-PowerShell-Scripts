@@ -2,13 +2,12 @@
 .SYNOPSIS
   Tests for Find-OneNotePages.ps1
 #>
+
+# Must be top-level: Pester Discovery evaluates -Skip: before BeforeAll runs.
+$script:SkipAll = [bool]$env:CI
+
 Describe "Find-OneNotePages.ps1" -Tag "Integration" {
-
   BeforeAll {
-    # Skip this test group in CI because it requires a running OneNote instance
-    # with a "Test Notebook" configured.
-    $script:SkipAll = [bool]$env:CI
-
     # Set the path to the script under test.
     $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\OneNote\Find-OneNotePages.ps1"
   }
