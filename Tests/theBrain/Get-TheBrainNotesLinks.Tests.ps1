@@ -30,8 +30,10 @@ Describe "Get-TheBrainNotesLinks.ps1" -Tag "DesktopOnly" {
   }
 
   AfterAll {
-    # Clean up the temporary directory
-    Remove-Item -Path $script:tempDir -Recurse -Force
+    # Clean up the temporary directory (guard against a failed BeforeAll)
+    if ($script:tempDir -and (Test-Path -LiteralPath $script:tempDir)) {
+      Remove-Item -Path $script:tempDir -Recurse -Force
+    }
   }
 
   Context "When searching for links" {
