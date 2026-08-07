@@ -20,7 +20,7 @@ jobs:
           persist-credentials: false
 
       - name: Install modules (PowerShell 5.1)
-        shell: powershell.exe
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
           Install-Module -Name Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
@@ -36,8 +36,10 @@ jobs:
           Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
 
       - name: Run Build (PSScriptAnalyzer + Pester)
-        shell: powershell.exe
-        run: .\Build.ps1
+        shell: powershell
+        # Force the Windows PowerShell 5.1 engine for isolated Pester test processes,
+        # because Build.ps1 prefers pwsh when it is available.
+        run: .\Build.ps1 -PowerShellExecutable powershell
 
   lint-and-test-ps7:
     name: Lint & Test (PowerShell 7, ${{ matrix.runner }})
@@ -61,9 +63,11 @@ jobs:
 
       - name: Run Build (PSScriptAnalyzer + Pester)
         shell: pwsh
-        run: .\Build.ps1
+        # Force the PowerShell Core engine for isolated Pester test processes.
+        run: .\Build.ps1 -PowerShellExecutable pwsh
 
-  codeql:
+  psscriptanalyzer:
+    name: PSScriptAnalyzer SARIF
     runs-on: windows-2025
     steps:
       - name: Checkout code
@@ -71,23 +75,16 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@9e3211c9a3b9311dfe05da2ed48eea3386f042dd
-        with:
-          languages: powershell
-          queries: security-extended
-
-      - name: Run Build for CodeQL context
+      - name: Run PSScriptAnalyzer and save SARIF
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          Install-Module -Name Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
-          Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
-          .\Build.ps1
+          Invoke-ScriptAnalyzer -Path . -Recurse -Settings PSScriptAnalyzerSettings.psd1 -Save analysis-results.sarif
 
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@9e3211c9a3b9311dfe05da2ed48eea3386f042dd
+      - name: Upload SARIF to GitHub code scanning
+        uses: github/codeql-action/upload-sarif@9e3211c9a3b9311dfe05da2ed48eea3386f042dd
         with:
+          sarif_file: analysis-results.sarif
           category: "/language:powershell"
 
   dependency-review:
