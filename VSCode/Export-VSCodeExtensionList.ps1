@@ -68,7 +68,7 @@ try {
     # --- Build all content in memory, write once (no intermediate files) ---
     $lines = [System.Collections.Generic.List[string]]::new()
 
-    $lines.Add("VS Code Profile & Extension Export")
+    $lines.Add("VS Code Profile and Extension Export")
     $lines.Add("Generated: $(Get-Date)")
     $lines.Add("Machine:   $env:COMPUTERNAME")
     $lines.Add("==================================================")
