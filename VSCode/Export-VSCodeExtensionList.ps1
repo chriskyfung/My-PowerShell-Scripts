@@ -98,7 +98,12 @@ try {
     # --- Single write to disk (honors -WhatIf) ---
     if ($PSCmdlet.ShouldProcess($OutputFile, "Export VS Code profiles and extensions")) {
         if (-not (Test-Path -Path $OutputDirectory -PathType Container)) {
-            New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+            try {
+                New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+            }
+            catch {
+                throw "Cannot create output directory '$OutputDirectory': $($_.Exception.Message)"
+            }
         }
         $lines | Out-File -FilePath $OutputFile -Encoding UTF8
         Write-Host "[✓] Export complete: $OutputFile`n"
