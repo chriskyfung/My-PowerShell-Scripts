@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
   workflow_dispatch:
 
@@ -19,21 +19,17 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install modules (PowerShell 5.1)
-        shell: powershell
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Install-Module -Name Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
-          Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
+      - name: Install pinned modules (PowerShell 5.1)
+        uses: ./.github/actions/setup-powershell-modules
+        with:
+          shell: powershell
 
       # Build.ps1 spawns isolated test processes and prefers pwsh when available,
       # so modules must also be present for pwsh.
-      - name: Install modules (pwsh for isolated test processes)
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Install-Module -Name Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
-          Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
+      - name: Install pinned modules (pwsh for isolated test processes)
+        uses: ./.github/actions/setup-powershell-modules
+        with:
+          shell: pwsh
 
       - name: Run Build (PSScriptAnalyzer + Pester)
         shell: powershell
@@ -55,11 +51,9 @@ jobs:
           persist-credentials: false
 
       - name: Install pinned PowerShell modules
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Install-Module -Name Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
-          Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
+        uses: ./.github/actions/setup-powershell-modules
+        with:
+          shell: pwsh
 
       - name: Run Build (PSScriptAnalyzer + Pester)
         shell: pwsh
@@ -69,6 +63,9 @@ jobs:
   psscriptanalyzer:
     name: PSScriptAnalyzer SARIF
     runs-on: windows-2025
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -88,7 +85,7 @@ jobs:
           category: "/language:powershell"
 
   dependency-review:
-    runs-on: windows-2025
+    runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code

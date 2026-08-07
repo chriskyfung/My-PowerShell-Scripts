@@ -1,0 +1,23 @@
+name: Setup PowerShell modules
+description: Installs pinned versions of Pester and PSScriptAnalyzer for the CI jobs.
+
+inputs:
+  shell:
+    description: Shell to run the installation in ('pwsh' or 'powershell')
+    required: false
+    default: pwsh
+
+runs:
+  using: composite
+  steps:
+    - name: Install Pester 5.7.1
+      shell: ${{ inputs.shell }}
+      run: |
+        $ErrorActionPreference = 'Stop'
+        Install-Module -Name Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
+
+    - name: Install PSScriptAnalyzer 1.25.0
+      shell: ${{ inputs.shell }}
+      run: |
+        $ErrorActionPreference = 'Stop'
+        Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck

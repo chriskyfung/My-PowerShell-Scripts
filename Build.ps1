@@ -62,8 +62,7 @@ try {
           $executable = 'pwsh'
       }
       else {
-          Write-Error "Requested 'pwsh' for isolated Pester tests, but it is not available."
-          exit 1
+          throw "Requested 'pwsh' for isolated Pester tests, but it is not available."
       }
   }
   elseif ($PowerShellExecutable -eq 'powershell') {
@@ -71,8 +70,7 @@ try {
           $executable = 'powershell'
       }
       else {
-          Write-Error "Requested 'powershell' for isolated Pester tests, but it is not available."
-          exit 1
+          throw "Requested 'powershell' for isolated Pester tests, but it is not available."
       }
   }
   elseif (Get-Command -Name 'pwsh' -ErrorAction SilentlyContinue) {
@@ -82,8 +80,7 @@ try {
       $executable = 'powershell'
   }
   else {
-      Write-Error "Could not find 'pwsh' or 'powershell' executable to run isolated Pester tests."
-      exit 1
+      throw "Could not find 'pwsh' or 'powershell' executable to run isolated Pester tests."
   }
   Write-Host "Using '$executable' for isolated test execution."
 
@@ -113,8 +110,7 @@ try {
       }
 
       if ($overallResult.FailedCount -gt 0) {
-        Write-Error "$($overallResult.FailedCount) test file(s) contained failures."
-        exit 1
+        throw "$($overallResult.FailedCount) test file(s) contained failures."
       }
   }
   else {
