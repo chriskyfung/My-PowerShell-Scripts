@@ -1,0 +1,152 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Windows 10-era kernel (Windows Server 2022) + legacy PowerShell 5.1
+          - runner: windows-2022
+            shell: powershell.exe
+            pwsh-version: ""
+
+          # Windows 10-era kernel (Windows Server 2022) + modern PowerShell 7.6.4
+          - runner: windows-2022
+            shell: pwsh
+            pwsh-version: "7.6.4"
+
+          # Windows 11-era kernel (Windows Server 2025) + modern PowerShell 7.6.3
+          - runner: windows-2025
+            shell: pwsh
+            pwsh-version: "7.6.3"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned PowerShell modules
+        shell: ${{ matrix.shell }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $moduleDir = Join-Path ${{ runner.temp }} 'powershell-modules'
+          New-Item -ItemType Directory -Path $moduleDir -Force | Out-Null
+          $env:PSModulePath = "$moduleDir;$env:PSModulePath"
+          echo "PSMODULE_PATH=$moduleDir" >> $env:GITHUB_ENV
+
+          # Install exact module versions for reproducible CI
+          $modules = @(
+            @{ Name = 'Pester'; RequiredVersion = '5.7.1' }
+            @{ Name = 'PSScriptAnalyzer'; RequiredVersion = '1.25.0' }
+          )
+
+          foreach ($mod in $modules) {
+            Write-Host "Installing $($mod.Name) $($mod.RequiredVersion)..."
+            if (-not (Get-InstalledModule -Name $mod.Name -RequiredVersion $mod.RequiredVersion -ErrorAction SilentlyContinue)) {
+              Install-Module -Name $mod.Name -RequiredVersion $mod.RequiredVersion `
+                -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
+            } else {
+              Write-Host "$($mod.Name) already installed."
+            }
+          }
+
+          Write-Host "Installed modules:"
+          Get-InstalledModule | Select-Object Name, Version | Format-Table -AutoSize
+
+      - name: Run Build (PSScriptAnalyzer + Pester)
+        shell: ${{ matrix.shell }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $moduleDir = ${{ env.PSMODULE_PATH }}
+          $env:PSModulePath = "$moduleDir;$env:PSModulePath"
+
+          Write-Host "Shell: ${{ matrix.shell }}"
+          if ($env:PWSH_VERSION) {
+            Write-Host "PowerShell version:"
+            $PSVersionTable.PSVersion
+          }
+
+          .\Build.ps1
+
+      - name: Upload Pester test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: pester-results-${{ matrix.runner }}-${{ matrix.shell }}
+          path: |
+            TestResults/
+            **/TestResults/
+          retention-days: 30
+          compression-level: 6
+
+      - name: Upload PSScriptAnalyzer SARIF
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: psscriptanalyzer-results-${{ matrix.runner }}-${{ matrix.shell }}
+          path: |
+            **/*.sarif
+          retention-days: 30
+          compression-level: 6
+
+  codeql:
+    runs-on: windows-2025
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@9e3211c9a3b9311dfe05da2ed48eea3386f042dd
+        with:
+          languages: powershell
+          queries: security-extended
+
+      - name: Run Build for CodeQL context
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # Install minimal modules for Build.ps1 to generate analysis context
+          $moduleDir = Join-Path ${{ runner.temp }} 'powershell-modules'
+          $env:PSModulePath = "$moduleDir;$env:PSModulePath"
+          if (-not (Get-InstalledModule -Name 'Pester' -RequiredVersion '5.7.1' -ErrorAction SilentlyContinue)) {
+            Install-Module -Name Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
+          }
+          if (-not (Get-InstalledModule -Name 'PSScriptAnalyzer' -RequiredVersion '1.25.0' -ErrorAction SilentlyContinue)) {
+            Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
+          }
+          .\Build.ps1
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@9e3211c9a3b9311dfe05da2ed48eea3386f042dd
+        with:
+          category: "/language:powershell"
+
+  dependency-review:
+    runs-on: windows-2025
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
+        with:
+          fail-on-severity: high
+          allow-licenses: GPL-3.0-or-later, MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, Unlicense
