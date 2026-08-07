@@ -9,7 +9,7 @@ Exports all VS Code user profiles and their installed extensions to a timestampe
 ### Prerequisites
 
 - **Windows OS** (script uses Windows-specific environment variables)
-- **PowerShell 5.0+** (Desktop Edition)
+- **PowerShell 5.0+** (Windows PowerShell 5.1 or PowerShell 7 / Core Edition)
 - **VS Code CLI (`code`)** must be available in your system PATH
   - Install via VS Code: `Shell Command: Install 'code' command in PATH` from the Command Palette
 
@@ -27,6 +27,12 @@ Exports all VS Code user profiles and their installed extensions to a timestampe
 .\Export-VSCodeExtensionList.ps1 -WhatIf
 ```
 
+**Specify a custom output directory:**
+
+```powershell
+.\Export-VSCodeExtensionList.ps1 -OutputDirectory "D:\Backups\VSCode"
+```
+
 **Run from another directory:**
 
 ```powershell
@@ -35,7 +41,7 @@ Exports all VS Code user profiles and their installed extensions to a timestampe
 
 ### Output
 
-The script generates a text file named `vscode-profiles-export-YYYY-MM-DD.txt` in your **My Documents** folder:
+The script generates a text file named `vscode-profiles-export-YYYY-MM-DD.txt` in your **My Documents** folder by default. You can override this with the `-OutputDirectory` parameter.
 
 ```plaintext
 VS Code Profile & Extension Export
@@ -69,15 +75,16 @@ End of export
 1. Reads `storage.json` from the VS Code user data directory
 2. Discovers all configured profiles (including `Default`)
 3. Uses `code --list-extensions --profile <name>` for each profile
-4. Compiles results into a single output file in your My Documents folder
+4. Compiles results into a single output file in your default My Documents folder (or a custom directory specified via `-OutputDirectory`)
 
 ### Troubleshooting
 
-| Issue                      | Solution                                                                                |
-|----------------------------|-----------------------------------------------------------------------------------------|
-| `'code' is not recognized` | Ensure the VS Code CLI is installed and PATH is refreshed                               |
-| `storage.json not found`   | VS Code may not be installed, or profiles haven't been created yet                      |
-| Empty extension list       | Verify extensions are installed in the profile; some extensions may be machine-specific |
+| Issue                      | Solution                                                                                 |
+|----------------------------|------------------------------------------------------------------------------------------|
+| `'code' is not recognized` | Ensure the VS Code CLI is installed and PATH is refreshed                                |
+| `storage.json not found`   | VS Code may not be installed, or profiles haven't been created yet                       |
+| Empty extension list       | Verify extensions are installed in the profile; some extensions may be machine-specific  |
+| `-OutputDirectory` empty   | The parameter is validated with `ValidateNotNullOrEmpty`; provide a valid directory path |
 
 ### Output File Contents
 
