@@ -74,6 +74,8 @@ jobs:
 
       - name: Run PSScriptAnalyzer and save SARIF
         shell: pwsh
+        # Exit code 1 means violations were found; we still want the SARIF uploaded.
+        continue-on-error: true
         run: |
           $ErrorActionPreference = 'Stop'
           Invoke-ScriptAnalyzer -Path . -Recurse -Settings PSScriptAnalyzerSettings.psd1 -Save analysis-results.sarif
