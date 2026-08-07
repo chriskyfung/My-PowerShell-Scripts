@@ -34,6 +34,11 @@ Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
     if (Test-Path $script:TestBackupDir) {
       Get-ChildItem -Path $script:TestBackupDir -Recurse | Remove-Item -Recurse -Force
     }
+    # Mock the Get-TheBrainDataDirectory.ps1 script to return our temp path.
+    # This is the correct Pester v5 syntax for mocking a script that is dot-sourced.
+    Mock $script:GetDataDirectoryScriptPath {
+      return $script:TestBrainDataDir
+    } -Verifiable
   }
 
   Context "when ImageType is 'default'" {
