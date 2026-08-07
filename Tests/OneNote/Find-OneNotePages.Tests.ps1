@@ -3,15 +3,17 @@
   Tests for Find-OneNotePages.ps1
 #>
 
-Describe "Find-OneNotePages.ps1" {
+# Must be top-level: Pester Discovery evaluates -Skip: before BeforeAll runs.
+$script:SkipAll = [bool]$env:CI
 
+Describe "Find-OneNotePages.ps1" -Tag "Integration" {
   BeforeAll {
     # Set the path to the script under test.
     $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\OneNote\Find-OneNotePages.ps1"
   }
 
   # This is an integration test that requires a running OneNote instance.
-  It "should return formatted output when pages are found" -Tag 'Integration' {
+  It "should return formatted output when pages are found" -Skip:$script:SkipAll {
     $output = (& $script:ScriptPath -Query "MyNote" | Out-String).Trim()
     $output | Should -Match "Test Notebook"
     $output | Should -Match " > Test Section"
@@ -23,7 +25,7 @@ Describe "Find-OneNotePages.ps1" {
     $output | Should -Match "URI          : "
   }
 
-  It "should return a warning when no pages are found" {
+  It "should return a warning when no pages are found" -Skip:$script:SkipAll {
     $output = (& $script:ScriptPath -Query "NonExistentPage" | Out-String).Trim()
     $output | Should -BeNullOrEmpty
     $output = (& $script:ScriptPath -Query "NonExistentPage" 3>&1 | Out-String).Trim()

@@ -90,6 +90,9 @@ Describe "Open-TheBrainNodeFolder.ps1" {
 
   Context "when an error occurs" {
     It "should call Write-Error when Get-TheBrainDataDirectory fails" {
+      # Mock Get-ChildItem to throw an exception to simulate an error
+      Mock $script:GetDataDirectoryScriptPath
+
       # Mock Get-Module to simulate that PSSQLite is not found, causing Get-TheBrainDataDirectory to fail
       Mock Get-Module {
         throw "Failed to find TheBrain data directory"

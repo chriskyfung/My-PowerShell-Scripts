@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test-ps51:
+    name: Lint & Test (PowerShell 5.1, Windows 2022)
+    runs-on: windows-2022
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned modules (PowerShell 5.1)
+        uses: ./.github/actions/setup-powershell-modules
+        with:
+          shell: powershell
+
+      # Build.ps1 spawns isolated test processes and prefers pwsh when available,
+      # so modules must also be present for pwsh.
+      - name: Install pinned modules (pwsh for isolated test processes)
+        uses: ./.github/actions/setup-powershell-modules
+        with:
+          shell: pwsh
+
+      - name: Run Build (PSScriptAnalyzer + Pester)
+        shell: powershell
+        # Force the Windows PowerShell 5.1 engine for isolated Pester test processes,
+        # because Build.ps1 prefers pwsh when it is available.
+        run: .\Build.ps1 -PowerShellExecutable powershell
+
+  lint-and-test-ps7:
+    name: Lint & Test (PowerShell 7, ${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [windows-2022, windows-2025]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned PowerShell modules
+        uses: ./.github/actions/setup-powershell-modules
+        with:
+          shell: pwsh
+
+      - name: Run Build (PSScriptAnalyzer + Pester)
+        shell: pwsh
+        # Force the PowerShell Core engine for isolated Pester test processes.
+        run: .\Build.ps1 -PowerShellExecutable pwsh
+
+  psscriptanalyzer:
+    name: PSScriptAnalyzer SARIF
+    runs-on: windows-2025
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Run PSScriptAnalyzer and save SARIF
+        shell: pwsh
+        # Exit code 1 means violations were found; we still want the SARIF uploaded.
+        continue-on-error: true
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Invoke-ScriptAnalyzer -Path . -Recurse -Settings PSScriptAnalyzerSettings.psd1 -Save analysis-results.sarif
+
+      - name: Upload SARIF to GitHub code scanning
+        uses: github/codeql-action/upload-sarif@9e3211c9a3b9311dfe05da2ed48eea3386f042dd
+        with:
+          sarif_file: analysis-results.sarif
+          category: "/language:powershell"
+
+  dependency-review:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
+        with:
+          fail-on-severity: high
+          allow-licenses: GPL-3.0-or-later, MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, Unlicense

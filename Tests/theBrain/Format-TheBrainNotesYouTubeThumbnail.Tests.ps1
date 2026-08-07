@@ -1,6 +1,11 @@
 # Test for Format-TheBrainNotesYouTubeThumbnail.ps1
 # Requires -Modules Pester
 
+# NOTE: Must be top-level (not inside BeforeAll) so Pester Discovery phase
+# can evaluate -Skip: expressions before BeforeAll runs.
+$script:SkipAll = $PSEdition -eq 'Core'
+
+
 BeforeAll {
   # Path to the script being tested
   $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\theBrain\Format-TheBrainNotesYouTubeThumbnail.ps1"
@@ -33,7 +38,7 @@ AfterAll {
   Remove-Item -Path $script:TestDrive.FullName -Recurse -Force
 }
 
-Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' {
+Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' -Tag "DesktopOnly" {
 
   BeforeEach {
     # Reset all mocks before each test to ensure isolation
@@ -49,7 +54,7 @@ Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' {
     Mock Convert-Path { return $Path } -Verifiable
   }
 
-  It 'should find, back up, and replace a YouTube thumbnail link' {
+  It 'should find, back up, and replace a YouTube thumbnail link' -Skip:$script:SkipAll {
     # Arrange
     # This object simulates the output of Select-String with a found match
     $MatchObject = @(
@@ -101,7 +106,7 @@ Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' {
     }
   }
 
-  It 'should do nothing if no matching links are found' {
+  It 'should do nothing if no matching links are found' -Skip:$script:SkipAll {
     # Arrange
     # Mock Select-String to return no matches
     Mock Get-ChildItem -Verifiable
@@ -122,7 +127,7 @@ Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' {
     }
   }
 
-  It 'should handle errors during file operations' {
+  It 'should handle errors during file operations' -Skip:$script:SkipAll {
     # Arrange
     # Simulate a match being found, same as the happy path test
     $MatchObject = @(
