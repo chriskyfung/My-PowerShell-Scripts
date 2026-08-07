@@ -7,12 +7,13 @@ Validates profile discovery, extension export content, empty-profile handling,
 summary output, and error handling for missing storage.json.
 
 .NOTES
-    Requires: Pester 5.x or 6.x
-    Because the target script has no injectable parameters and hardcodes
-    $env:APPDATA and [Environment]::GetFolderPath('MyDocuments'), these tests
-    redirect $env:APPDATA to a temp path and shadow the 'code' external
-    command with a PowerShell function of the same name (function resolution
-    takes precedence over external executables in the same session).
+    Requires: Pester 5.x
+    The target script hardcodes $env:APPDATA but supports an injectable
+    -OutputDirectory parameter, so these tests redirect $env:APPDATA to a temp
+    path and pass -OutputDirectory to keep all writes inside the temp root.
+    The 'code' external command is shadowed with a PowerShell function of the
+    same name (function resolution takes precedence over external executables
+    in the same session).
 #>
 
 #Requires -Version 5.0
@@ -24,9 +25,10 @@ Describe "Export-VSCodeExtensionList.ps1" {
         $script:ScriptPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\VSCode\Export-VSCodeExtensionList.ps1"
         $script:OriginalAppData = $env:APPDATA
         $script:TestRoot = Join-Path -Path $env:TEMP -ChildPath "Export-VSCodeExtList.Tests.$([guid]::NewGuid())"
-        $script:DocumentsPath = [Environment]::GetFolderPath('MyDocuments')
+        $script:OutputDir = Join-Path -Path $script:TestRoot -ChildPath "Output"
 
         New-Item -ItemType Directory -Path (Join-Path $script:TestRoot "Code\User\globalStorage") -Force | Out-Null
+        New-Item -ItemType Directory -Path $script:OutputDir -Force | Out-Null
         $env:APPDATA = $script:TestRoot
 
         $script:storageJson = @{
@@ -53,21 +55,20 @@ Describe "Export-VSCodeExtensionList.ps1" {
             }
         }
 
-        # Track any real output files created in Documents so we can clean them up,
-        # since the script cannot be redirected away from the real Documents folder.
-        $script:ExpectedOutputFile = Join-Path -Path $script:DocumentsPath -ChildPath "vscode-profiles-export-$(Get-Date -Format 'yyyy-MM-dd').txt"
+        # The output directory is injectable via -OutputDirectory, so tests write
+        # into the temp TestRoot instead of the real Documents folder.
+        $script:ExpectedOutputFile = Join-Path -Path $script:OutputDir -ChildPath "vscode-profiles-export-$(Get-Date -Format 'yyyy-MM-dd').txt"
     }
 
     AfterAll {
         $env:APPDATA = $script:OriginalAppData
         Remove-Item -Path $script:TestRoot -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item -Path $script:ExpectedOutputFile -Force -ErrorAction SilentlyContinue
         Remove-Item -Path "function:global:code" -ErrorAction SilentlyContinue
     }
 
     Context "Profile discovery" {
         It "discovers all profiles including Default plus additional profiles from storage.json" {
-            $output = (& $script:ScriptPath 2>&1 6>&1 *>&1) | Out-String
+            $output = (& $script:ScriptPath -OutputDirectory $script:OutputDir *>&1) | Out-String
             $output | Should -Match "Found profiles: Default, Work, Personal"
         }
     }
@@ -75,10 +76,10 @@ Describe "Export-VSCodeExtensionList.ps1" {
     Context "Output file generation" {
         BeforeEach {
             Remove-Item -Path $script:ExpectedOutputFile -Force -ErrorAction SilentlyContinue
-            & $script:ScriptPath | Out-Null
+            & $script:ScriptPath -OutputDirectory $script:OutputDir | Out-Null
         }
 
-        It "creates the timestamped output file in MyDocuments" {
+        It "creates the timestamped output file in the output directory" {
             $script:ExpectedOutputFile | Should -Exist
         }
 
@@ -114,7 +115,7 @@ Describe "Export-VSCodeExtensionList.ps1" {
 
     Context "Console summary output" {
         It "prints a per-profile extension count summary to the host" {
-            $output = & $script:ScriptPath 6>&1 *>&1 | Out-String
+            $output = (& $script:ScriptPath -OutputDirectory $script:OutputDir *>&1) | Out-String
             $output | Should -Match "Default:\s*2 extension\(s\)"
             $output | Should -Match "Work:\s*1 extension\(s\)"
             $output | Should -Match "Personal:\s*0 extension\(s\)"
@@ -126,7 +127,11 @@ Describe "Export-VSCodeExtensionList.ps1" {
             $storagePath = Join-Path $script:TestRoot "Code\User\globalStorage\storage.json"
             Rename-Item -Path $storagePath -NewName "storage.json.bak"
             try {
-                { & $script:ScriptPath 2>$null } | Should -Throw "*storage.json*"
+                # Run in a child process so the script's `exit 1` path
+                # (which follows its terminating Write-Error) sets $LASTEXITCODE.
+                $exePath = (Get-Process -Id $PID).Path
+                & $exePath -NoProfile -File $script:ScriptPath -OutputDirectory $script:OutputDir 2>$null | Out-Null
+                $LASTEXITCODE | Should -Be 1
             }
             finally {
                 Rename-Item -Path (Join-Path $script:TestRoot "Code\User\globalStorage\storage.json.bak") -NewName "storage.json"
@@ -136,7 +141,7 @@ Describe "Export-VSCodeExtensionList.ps1" {
         It "throws a descriptive error message when VS Code user directory is absent" {
             $env:APPDATA = Join-Path $script:TestRoot "nonexistent"
             try {
-                { & $script:ScriptPath 2>&1 } | Should -Throw "*An error occurred*"
+                { & $script:ScriptPath -OutputDirectory $script:OutputDir 2>&1 } | Should -Throw "*An error occurred*"
             }
             finally {
                 $env:APPDATA = $script:TestRoot
@@ -147,7 +152,7 @@ Describe "Export-VSCodeExtensionList.ps1" {
     Context "-WhatIf support" {
         It "does NOT create an output file when -WhatIf is specified" {
             Remove-Item -Path $script:ExpectedOutputFile -Force -ErrorAction SilentlyContinue
-            & $script:ScriptPath -WhatIf | Out-Null
+            & $script:ScriptPath -OutputDirectory $script:OutputDir -WhatIf | Out-Null
             $script:ExpectedOutputFile | Should -Not -Exist
         }
     }

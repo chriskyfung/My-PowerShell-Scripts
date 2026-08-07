@@ -13,6 +13,10 @@
     - Extension lists with counts for each profile
     - A summary section at the end
 
+.PARAMETER OutputDirectory
+    Directory where the exported text file will be written. Defaults to the user's
+    My Documents folder.
+
 .PARAMETER WhatIf
     Shows what would happen if the cmdlet runs without actually exporting anything.
 
@@ -28,7 +32,7 @@
     Text file containing profile and extension information.
 
 .NOTES
-    Version:        1.1.0
+    Version:        1.2.0
     Author:         @chriskyfung, Claude Sonnet 4.6, DeepSeek V4 Flash, Laguna M.1, Step 3.7 Flash
     License:        GNU GPLv3 license
     Creation Date:  2026-06-01
@@ -38,7 +42,11 @@
 #Requires -Version 5.0
 
 [CmdletBinding(SupportsShouldProcess)]
-param()
+param(
+    [Parameter()]
+    [ValidateNotNullOrEmpty()]
+    [string]$OutputDirectory = [Environment]::GetFolderPath('MyDocuments')
+)
 
 # Script-level error handling
 $ErrorActionPreference = "Stop"
@@ -46,7 +54,7 @@ $ErrorActionPreference = "Stop"
 try {
     $VSCodeUserDir = "$env:APPDATA\Code\User"
     $StorageJson = "$VSCodeUserDir\globalStorage\storage.json"
-    $OutputFile = "$([Environment]::GetFolderPath('MyDocuments'))\vscode-profiles-export-$(Get-Date -Format 'yyyy-MM-dd').txt"
+    $OutputFile = Join-Path -Path $OutputDirectory -ChildPath "vscode-profiles-export-$(Get-Date -Format 'yyyy-MM-dd').txt"
 
     Write-Host "=== VS Code Profile Export ===" -ForegroundColor Cyan
     Write-Host "Output file: $OutputFile`n"
