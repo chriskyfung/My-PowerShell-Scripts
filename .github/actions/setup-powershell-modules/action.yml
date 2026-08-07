@@ -21,3 +21,9 @@ runs:
       run: |
         $ErrorActionPreference = 'Stop'
         Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
+
+    - name: Install PSSQLite 1.1.0
+      shell: ${{ inputs.shell }}
+      run: |
+        $ErrorActionPreference = 'Stop'
+        Install-Module -Name PSSQLite -RequiredVersion 1.1.0 -Scope CurrentUser -Repository PSGallery -Force -SkipPublisherCheck
