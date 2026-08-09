@@ -11,6 +11,24 @@
 #
 
 BeforeAll {
+  # Get-TheBrainDataDirectory.ps1 verifies this real installation-specific
+  # metadata path before calling Invoke-SqliteQuery. Mock only this exact
+  # precondition so the test remains independent of a local TheBrain install.
+  $script:TheBrainMetadataDatabasePath = Join-Path `
+    $env:LOCALAPPDATA `
+    'TheBrain\MetaDB\TheBrainMeta.db'
+
+  Mock Test-Path { $true } -ParameterFilter {
+    $Path -eq $script:TheBrainMetadataDatabasePath -or
+    $LiteralPath -eq $script:TheBrainMetadataDatabasePath
+  }
+
+  Mock Invoke-SqliteQuery {
+    return [PSCustomObject]@{
+      Value = """$script:TestDrive"""
+    }
+  } -Verifiable
+
   # Resolve full paths to the scripts at the start
   $script:ScriptPath = Resolve-Path -Path "$PSScriptRoot/../../theBrain/Open-TheBrainNodeFolder.ps1"
   $script:GetDataDirectoryScriptPath = Resolve-Path -Path "$PSScriptRoot/../../theBrain/Get-TheBrainDataDirectory.ps1"

@@ -5,6 +5,18 @@
 
 Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
   BeforeAll {
+    # Get-TheBrainDataDirectory.ps1 verifies this real installation-specific
+    # metadata path before calling Invoke-SqliteQuery. Mock only this exact
+    # precondition so the test remains independent of a local TheBrain install.
+    $script:TheBrainMetadataDatabasePath = Join-Path `
+      $env:LOCALAPPDATA `
+      'TheBrain\MetaDB\TheBrainMeta.db'
+
+      Mock Test-Path { $true } -ParameterFilter {
+      $Path -eq $script:TheBrainMetadataDatabasePath -or
+      $LiteralPath -eq $script:TheBrainMetadataDatabasePath
+    }
+
     # Path to the script being tested, resolved relative to this test script's location
     $script:ScriptPath = Resolve-Path -Path "$PSScriptRoot\..\..\theBrain\Resize-TheBrainNotesYouTubeThumbnail.ps1"
     $script:GetDataDirectoryScriptPath = Resolve-Path -Path "$PSScriptRoot\..\..\theBrain\Get-TheBrainDataDirectory.ps1"
@@ -18,7 +30,11 @@ Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
     New-Item -Path $script:TestThoughtDir -ItemType Directory -Force | Out-Null
 
     # Mock the external script dependency to return a temporary path
-    Mock Invoke-SqliteQuery { return [PSCustomObject]@{ Value = """$script:TestDrive""" } } -Verifiable
+    Mock Invoke-SqliteQuery {
+      return [PSCustomObject]@{
+        Value = """$script:TestDrive"""
+      }
+    } -Verifiable
   }
 
   AfterAll {

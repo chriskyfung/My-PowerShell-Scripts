@@ -13,6 +13,18 @@ $script:SkipCsvInjectionInCI = [bool]$env:CI
 
 Describe "Get-TheBrainNotesLinks.ps1" -Tag "DesktopOnly" {
   BeforeAll {
+    # Get-TheBrainDataDirectory.ps1 verifies this real installation-specific
+    # metadata path before calling Invoke-SqliteQuery. Mock only this exact
+    # precondition so the test remains independent of a local TheBrain install.
+    $script:TheBrainMetadataDatabasePath = Join-Path `
+      $env:LOCALAPPDATA `
+      'TheBrain\MetaDB\TheBrainMeta.db'
+
+    Mock Test-Path { $true } -ParameterFilter {
+      $Path -eq $script:TheBrainMetadataDatabasePath -or
+      $LiteralPath -eq $script:TheBrainMetadataDatabasePath
+    }
+
     # Path to the script being tested
     $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\theBrain\Get-TheBrainNotesLinks.ps1"
 
@@ -32,6 +44,12 @@ Describe "Get-TheBrainNotesLinks.ps1" -Tag "DesktopOnly" {
 
     # Mock Format-List to prevent UI from showing during tests
     Mock Format-List { return @( $_ ) } -Verifiable
+
+    Mock Invoke-SqliteQuery {
+      [PSCustomObject]@{
+        Value = """$script:tempDir"""
+      }
+    } -Verifiable
   }
 
   AfterAll {
@@ -154,9 +172,6 @@ Describe "Get-TheBrainNotesLinks.ps1" -Tag "DesktopOnly" {
 
   Context "Without -Path parameter" {
     It "should call Get-TheBrainDataDirectory.ps1 to get the default path" -Skip:$script:SkipAll {
-      # Mock the dependency script
-      Mock Invoke-SqliteQuery { return [PSCustomObject]@{ Value = """$script:tempDir""" } } -Verifiable
-
       & $script:ScriptPath | Out-Null
       Should -Invoke Invoke-SqliteQuery -Times 1 -Exactly
     }
