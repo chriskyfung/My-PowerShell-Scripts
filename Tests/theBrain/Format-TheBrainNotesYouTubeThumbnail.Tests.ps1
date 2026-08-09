@@ -6,21 +6,9 @@
 $script:SkipAll = $PSEdition -eq 'Core'
 
 
-BeforeAll {
-  # Get-TheBrainDataDirectory.ps1 verifies this real installation-specific
-  # metadata path before calling Invoke-SqliteQuery. Mock only this exact
-  # precondition so the test remains independent of a local TheBrain install.
-  $script:TheBrainMetadataDatabasePath = Join-Path `
-    $env:LOCALAPPDATA `
-    'TheBrain\MetaDB\TheBrainMeta.db'
-
-  Mock Test-Path { $true } -ParameterFilter {
-    $Path -eq $script:TheBrainMetadataDatabasePath -or
-    $LiteralPath -eq $script:TheBrainMetadataDatabasePath
-  }
-
-  # Path to the script being tested
-  $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\theBrain\Format-TheBrainNotesYouTubeThumbnail.ps1"
+  BeforeAll {
+    # Path to the script being tested
+    $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\theBrain\Format-TheBrainNotesYouTubeThumbnail.ps1"
 
   # Set up a temporary file system structure to simulate TheBrain's data
   $script:TestDrive = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "Test-FormatTheBrainYouTubeThumbnail") -Force
@@ -41,12 +29,6 @@ BeforeAll {
   $script:OriginalContent = '[![Test Alt Text](.data/md-images/thumbnail123.jpg)](https://youtu.be/VIDEO123)'
   Set-Content -Path $script:NotesFile -Value $script:OriginalContent -Encoding UTF8
 
-  # Mock the external script dependency to return a temporary path
-  Mock Invoke-SqliteQuery {
-    return [PSCustomObject]@{
-      Value = """$script:TestDrive"""
-    }
-  } -Verifiable
 }
 
 AfterAll {
@@ -96,7 +78,7 @@ Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' -Tag "DesktopOnly" {
     Mock New-Item { return [pscustomobject]@{ FullName = $Path[0] } } -Verifiable
 
     # Act
-    . $script:ScriptPath
+    . $script:ScriptPath -DataDirectory $script:BrainFolder
 
     # Assert
     $ExpectedNewString = '[![Test Alt Text](https://img.youtube.com/vi/VIDEO123/maxresdefault.jpg)](https://www.youtube.com/watch?v=VIDEO123)'
@@ -129,7 +111,7 @@ Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' -Tag "DesktopOnly" {
     Mock Select-String { return $null } -Verifiable
 
     # Act
-    . $script:ScriptPath
+    . $script:ScriptPath -DataDirectory $script:BrainFolder
 
     # Assert
     # Ensure no file operations were attempted

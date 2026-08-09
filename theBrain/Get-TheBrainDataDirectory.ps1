@@ -23,29 +23,37 @@
 #>
 
 #Requires -Version 2.0
-#Requires -Modules PSSQLite
+
+param(
+    [string]$DataDirectory
+)
 
 $ErrorActionPreference = "Stop"
 
 try {
-    # Check if PSSQLite module is available
-    if (-not (Get-Module -ListAvailable -Name PSSQLite)) {
-        throw "The 'PSSQLite' module is required but not installed. Please run 'Install-Module -Name PSSQLite'."
-    }
+    if ($DataDirectory) {
+        # Use the provided directory directly (skip PSSQLite check and DB query)
+        $brainDataDirectory = $DataDirectory
+    } else {
+        # Require PSSQLite only when actually querying the database
+        if (-not (Get-Module -ListAvailable -Name PSSQLite)) {
+            throw "The 'PSSQLite' module is required but not installed. Please run 'Install-Module -Name PSSQLite'."
+        }
 
-    $theBrainMetaDatabase = Join-Path $env:LOCALAPPDATA "TheBrain\MetaDB\TheBrainMeta.db"
-    if (-not (Test-Path -Path $theBrainMetaDatabase)) {
-        throw "TheBrain metadata database was not found at '$theBrainMetaDatabase'."
-    }
+        $theBrainMetaDatabase = Join-Path $env:LOCALAPPDATA "TheBrain\MetaDB\TheBrainMeta.db"
+        if (-not (Test-Path -Path $theBrainMetaDatabase)) {
+            throw "TheBrain metadata database was not found at '$theBrainMetaDatabase'."
+        }
 
-    $query = "SELECT Value FROM MetaSettings WHERE Name='preferences.userbraindatadirectory'"
+        $query = "SELECT Value FROM MetaSettings WHERE Name='preferences.userbraindatadirectory'"
 
-    $result = Invoke-SqliteQuery -DataSource $theBrainMetaDatabase -Query $query
-    $brainDataDirectory = $result.Value.Trim('"').Replace('\\', '\')
+        $result = Invoke-SqliteQuery -DataSource $theBrainMetaDatabase -Query $query
+        $brainDataDirectory = $result.Value.Trim('"').Replace('\\', '\')
 
-    if ($null -eq $brainDataDirectory -or $brainDataDirectory -eq '') {
-        # Default to 'Brains' folder in 'My Documents' if no value is found
-        $brainDataDirectory = Join-Path -Path ([Environment]::GetFolderPath('MyDocuments')) -ChildPath 'Brains'
+        if ($null -eq $brainDataDirectory -or $brainDataDirectory -eq '') {
+            # Default to 'Brains' folder in 'My Documents' if no value is found
+            $brainDataDirectory = Join-Path -Path ([Environment]::GetFolderPath('MyDocuments')) -ChildPath 'Brains'
+        }
     }
 
     # Check if the folder exists

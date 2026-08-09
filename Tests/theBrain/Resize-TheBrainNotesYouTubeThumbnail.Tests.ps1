@@ -5,21 +5,8 @@
 
 Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
   BeforeAll {
-    # Get-TheBrainDataDirectory.ps1 verifies this real installation-specific
-    # metadata path before calling Invoke-SqliteQuery. Mock only this exact
-    # precondition so the test remains independent of a local TheBrain install.
-    $script:TheBrainMetadataDatabasePath = Join-Path `
-      $env:LOCALAPPDATA `
-      'TheBrain\MetaDB\TheBrainMeta.db'
-
-      Mock Test-Path { $true } -ParameterFilter {
-      $Path -eq $script:TheBrainMetadataDatabasePath -or
-      $LiteralPath -eq $script:TheBrainMetadataDatabasePath
-    }
-
     # Path to the script being tested, resolved relative to this test script's location
     $script:ScriptPath = Resolve-Path -Path "$PSScriptRoot\..\..\theBrain\Resize-TheBrainNotesYouTubeThumbnail.ps1"
-    $script:GetDataDirectoryScriptPath = Resolve-Path -Path "$PSScriptRoot\..\..\theBrain\Get-TheBrainDataDirectory.ps1"
 
     # Set up a temporary directory to simulate TheBrain's data folder
     $script:TestDrive = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "Test-ResizeTheBrainNotesYouTubeThumbnail") -Force
@@ -29,12 +16,6 @@ Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
     $script:TestNotesFile = Join-Path $script:TestThoughtDir 'Notes.md'
     New-Item -Path $script:TestThoughtDir -ItemType Directory -Force | Out-Null
 
-    # Mock the external script dependency to return a temporary path
-    Mock Invoke-SqliteQuery {
-      return [PSCustomObject]@{
-        Value = """$script:TestDrive"""
-      }
-    } -Verifiable
   }
 
   AfterAll {
@@ -50,11 +31,6 @@ Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
     if (Test-Path $script:TestBackupDir) {
       Get-ChildItem -Path $script:TestBackupDir -Recurse | Remove-Item -Recurse -Force
     }
-    # Mock the Get-TheBrainDataDirectory.ps1 script to return our temp path.
-    # This is the correct Pester v5 syntax for mocking a script that is dot-sourced.
-    Mock $script:GetDataDirectoryScriptPath {
-      return $script:TestBrainDataDir
-    } -Verifiable
   }
 
   Context "when ImageType is 'default'" {
@@ -64,7 +40,7 @@ Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
       Set-Content -Path $script:TestNotesFile -Value $content -Encoding UTF8
 
       # Act
-      . $script:ScriptPath
+      . $script:ScriptPath -DataDirectory $script:TestBrainDataDir
 
       # Assert
       $newContent = Get-Content -Path $script:TestNotesFile -Encoding UTF8
@@ -77,7 +53,7 @@ Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
       Set-Content -Path $script:TestNotesFile -Value $content -Encoding UTF8
 
       # Act
-      . $script:ScriptPath -NewWidth 75
+      . $script:ScriptPath -NewWidth 75 -DataDirectory $script:TestBrainDataDir
 
       # Assert
       $newContent = Get-Content -Path $script:TestNotesFile -Encoding UTF8
@@ -90,7 +66,7 @@ Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
       Set-Content -Path $script:TestNotesFile -Value $content -Encoding UTF8
 
       # Act
-      . $script:ScriptPath
+      . $script:ScriptPath -DataDirectory $script:TestBrainDataDir
 
       # Assert
       $backupDirForThought = Join-Path $script:TestBackupDir 'TestThought'
@@ -107,7 +83,7 @@ Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
       Set-Content -Path $script:TestNotesFile -Value $content -Encoding UTF8
 
       # Act
-      . $script:ScriptPath -ImageType resized -CurrentWidth 30 -NewWidth 80
+      . $script:ScriptPath -ImageType resized -CurrentWidth 30 -NewWidth 80 -DataDirectory $script:TestBrainDataDir
 
       # Assert
       $newContent = Get-Content -Path $script:TestNotesFile -Encoding UTF8
@@ -120,7 +96,7 @@ Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
       Set-Content -Path $script:TestNotesFile -Value $content -Encoding UTF8
 
       # Act
-      . $script:ScriptPath -ImageType resized -CurrentWidth 30 -NewWidth 80
+      . $script:ScriptPath -ImageType resized -CurrentWidth 30 -NewWidth 80 -DataDirectory $script:TestBrainDataDir
 
       # Assert
       $newContent = Get-Content -Path $script:TestNotesFile -Encoding UTF8
@@ -137,7 +113,7 @@ Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
       Set-Content -Path $script:TestNotesFile -Value $content -Encoding UTF8
 
       # Act
-      . $script:ScriptPath
+      . $script:ScriptPath -DataDirectory $script:TestBrainDataDir
 
       # Assert
       (Get-Content -Path $script:TestNotesFile -Encoding UTF8) | Should -Be $content
@@ -147,23 +123,21 @@ Describe 'Resize-TheBrainNotesYouTubeThumbnail.ps1' {
   }
 
   Context 'Error Handling' {
-    It 'should call Write-Error when Get-TheBrainDataDirectory.ps1 fails' {
+    It 'should call Write-Error when an error occurs' {
       # Arrange
       # This mock will cause the script's try/catch block to fail
-      Mock Get-Module { return $null } -ParameterFilter { $Name -eq 'PSSQLite' } -Verifiable
+      Mock Get-ChildItem { throw "Simulated error" } -Verifiable
 
       # Mock Write-Error to verify the catch block is executed
       Mock Write-Error -Verifiable
 
       # Act
       # The script should not throw an unhandled exception because it has a catch block
-      { . $script:ScriptPath } | Should -Not -Throw
+      { . $script:ScriptPath -DataDirectory $script:TestBrainDataDir } | Should -Not -Throw
 
       # Assert
       # Verify that the script's catch block called Write-Error
-      Should -Invoke Write-Error -ParameterFilter {
-        $Message -eq "An error occurred while trying to get TheBrain data directory: The 'PSSQLite' module is required but not installed. Please run 'Install-Module -Name PSSQLite'."
-      }
+      Should -Invoke Write-Error -Times 1 -Exactly
     }
   }
 }

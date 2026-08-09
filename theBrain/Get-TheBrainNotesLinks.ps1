@@ -36,7 +36,8 @@
 
 param(
     [string]$Path,
-    [string]$OutputPath
+    [string]$OutputPath,
+    [string]$DataDirectory
 )
 
 $ErrorActionPreference = "Stop"
@@ -44,7 +45,11 @@ $ErrorActionPreference = "Stop"
 try {
     # If no path is specified, get the default TheBrain data directory
     if (-not $Path) {
-        $Path = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
+        if ($DataDirectory) {
+            $Path = $DataDirectory
+        } else {
+            $Path = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
+        }
     }
 
     $PathToSearch = Get-ChildItem -Directory -Path $Path -Exclude 'Backup'

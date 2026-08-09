@@ -66,4 +66,22 @@ Describe 'Get-TheBrainDataDirectory' {
       $result | Should -Be (Join-Path 'C:\Users\TestUser\Documents' -ChildPath 'Brains')
     }
   }
+
+  Context 'When -DataDirectory is provided' {
+    It 'should return the provided directory without querying the database' {
+      $testDir = Join-Path $env:TEMP 'TestBrainDataDir'
+      New-Item -ItemType Directory -Path $testDir -Force | Out-Null
+
+      Mock Test-Path { $true } -ParameterFilter { $Path -eq $testDir }
+      Mock Invoke-SqliteQuery { throw 'Should not be called' } -Verifiable
+
+      $result = & $script:ScriptPath -DataDirectory $testDir
+      $result | Should -Be $testDir
+
+      # Should not have called Invoke-SqliteQuery since -DataDirectory bypasses it
+      Should -Not -Invoke Invoke-SqliteQuery
+
+      Remove-Item -Path $testDir -Recurse -Force
+    }
+  }
 }

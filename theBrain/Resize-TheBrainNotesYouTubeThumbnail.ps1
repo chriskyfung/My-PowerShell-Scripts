@@ -55,13 +55,19 @@ param(
 
     [Parameter(Mandatory = $false)]
     [ValidateRange(1, 100)]
-    [int]$CurrentWidth = 30
+    [int]$CurrentWidth = 30,
+
+    [string]$DataDirectory
 )
 
 $ErrorActionPreference = "Stop"
 
 try {
-    $BrainFolder = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
+    if ($DataDirectory) {
+        $BrainFolder = $DataDirectory
+    } else {
+        $BrainFolder = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
+    }
     $SubFolders = Get-ChildItem -Directory -Path $BrainFolder -Exclude 'Backup'
     $BackupFolder = Join-Path $BrainFolder 'Backup'
 

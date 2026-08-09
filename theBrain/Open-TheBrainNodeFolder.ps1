@@ -29,13 +29,19 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^[a-zA-Z0-9-]+$')]
-    [string]$NodeId
+    [string]$NodeId,
+
+    [string]$DataDirectory
 )
 
 $ErrorActionPreference = "Stop"
 
 try {
-    $BrainFolder = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
+    if ($DataDirectory) {
+        $BrainFolder = $DataDirectory
+    } else {
+        $BrainFolder = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
+    }
     $PathToSearch = Get-ChildItem -Directory -Path $BrainFolder -Exclude 'Backup'
     $Folder = Get-ChildItem -Path $PathToSearch -Directory -Filter $NodeId -Recurse
 

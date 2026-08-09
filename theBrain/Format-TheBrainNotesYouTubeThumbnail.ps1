@@ -26,12 +26,18 @@
 #Requires -Version 2.0
 
 [CmdletBinding()]
+param(
+    [string]$DataDirectory
+)
 
 $ErrorActionPreference = "Stop"
 
 try {
-    # Look up the Notes.md files that locate under the Brain data folder and contain the YouTube thumbnail URLs.
-    $BrainFolder = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
+    if ($DataDirectory) {
+        $BrainFolder = $DataDirectory
+    } else {
+        $BrainFolder = . "$PSScriptRoot\Get-TheBrainDataDirectory.ps1"
+    }
     $SubFolders = Get-ChildItem -Directory -Path $BrainFolder -Exclude 'Backup'
     $BackupFolder = Join-Path $BrainFolder 'Backup'
 
