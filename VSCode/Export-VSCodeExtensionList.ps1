@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Exports all VS Code profiles and their extensions to a text file.
 
@@ -63,7 +63,7 @@ try {
     $json = Get-Content $StorageJson -Raw | ConvertFrom-Json
     $VSCodeProfiles = @("Default") + ($json.userDataProfiles | Select-Object -ExpandProperty name)
 
-    Write-Host "[✓] Found profiles: $($VSCodeProfiles -join ', ')`n"
+    Write-Host "[OK] Found profiles: $($VSCodeProfiles -join ', ')`n"
 
     # --- Build all content in memory, write once (no intermediate files) ---
     $lines = [System.Collections.Generic.List[string]]::new()
@@ -106,7 +106,7 @@ try {
             }
         }
         $lines | Out-File -FilePath $OutputFile -Encoding UTF8
-        Write-Host "[✓] Export complete: $OutputFile`n"
+        Write-Host "[OK] Export complete: $OutputFile`n"
     }
     else {
         Write-Host "[i] WhatIf: Output file would be written to $OutputFile`n"
