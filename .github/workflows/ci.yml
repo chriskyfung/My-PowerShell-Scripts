@@ -73,12 +73,12 @@ jobs:
           persist-credentials: false
 
       - name: Run PSScriptAnalyzer and save SARIF
-        shell: pwsh
-        # Exit code 1 means violations were found; we still want the SARIF uploaded.
-        continue-on-error: true
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Invoke-ScriptAnalyzer -Path . -Recurse -Settings PSScriptAnalyzerSettings.psd1 -Save analysis-results.sarif
+        uses: microsoft/psscriptanalyzer-action@v1.1
+        with:
+          path: .
+          recurse: true
+          settings: PSScriptAnalyzerSettings.psd1
+          output: analysis-results.sarif
 
       - name: Upload SARIF to GitHub code scanning
         uses: github/codeql-action/upload-sarif@9e3211c9a3b9311dfe05da2ed48eea3386f042dd
