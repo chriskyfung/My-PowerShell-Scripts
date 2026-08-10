@@ -6,11 +6,6 @@
 # Discovery phase can evaluate -Skip: expressions before BeforeAll runs.
 $script:SkipAll = $PSEdition -eq 'Core'
 
-# This test currently triggers a null Path error in the script on the CI
-# runner (PS 5.1, Windows Server). Keep it running locally, but skip it in CI
-# until the underlying script issue is fixed.
-$script:SkipCsvInjectionInCI = [bool]$env:CI
-
 Describe "Get-TheBrainNotesLinks.ps1" -Tag "DesktopOnly" {
   BeforeAll {
     # Path to the script being tested
@@ -103,7 +98,7 @@ Describe "Get-TheBrainNotesLinks.ps1" -Tag "DesktopOnly" {
       Remove-Item -Path $outputCsv -Force
     }
 
-    It "should sanitize fields to prevent CSV injection" -Skip:($script:SkipAll -or $script:SkipCsvInjectionInCI) {
+    It "should sanitize fields to prevent CSV injection" -Skip:($script:SkipAll) {
       $maliciousLinkText = '=HYPERLINK("cmd.exe","/c dir")'
       $maliciousURL = '+A1+B1'
       $maliciousContent = "This note contains a [$maliciousLinkText]($maliciousURL)."
