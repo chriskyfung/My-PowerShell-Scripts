@@ -3,6 +3,9 @@
   Tests for Optimize-DockerDesktopVHD.ps1 script.
 #>
 
+#Requires -PSEdition Desktop
+$script:SkipAll = $PSEdition -eq 'Core'
+
 Describe "Optimize-DockerDesktopVHD Script" -Tag "CI" {
 
   BeforeAll {
@@ -126,7 +129,7 @@ Describe "Optimize-DockerDesktopVHD Script" -Tag "CI" {
       }
     }
 
-    It "Should use default VHDX path when not specified" {
+    It "Should use default VHDX path when not specified" -Skip:$script:SkipAll {
       Mock Test-Path { $true } -ParameterFilter { $Path -like "*docker_data.vhdx*" }
       Mock Get-Item { [PSCustomObject]@{ Length = 1048576 } }
       Mock Get-Process { $null } -ParameterFilter { $Name -eq "Docker Desktop" }
@@ -135,7 +138,7 @@ Describe "Optimize-DockerDesktopVHD Script" -Tag "CI" {
       { & $script:ScriptPath -VhdPath $script:TestVhdPath } | Should -Not -Throw
     }
 
-    It "Should accept custom VHDX path" {
+    It "Should accept custom VHDX path" -Skip:$script:SkipAll {
       Mock Test-Path { $true } -ParameterFilter { $Path -eq $script:TestVhdPath }
       Mock Get-Item { [PSCustomObject]@{ Length = 1048576 } } -ParameterFilter { $Path -eq $script:TestVhdPath }
       Mock Get-Process { $null }
@@ -155,7 +158,7 @@ Describe "Optimize-DockerDesktopVHD Script" -Tag "CI" {
       }
     }
 
-    It "Should call Optimize-VHD with correct parameters" {
+    It "Should call Optimize-VHD with correct parameters" -Skip:$script:SkipAll {
       Mock Test-Path { $true }
       Mock Get-Item { [PSCustomObject]@{ Length = 1048576 } }
       Mock Get-Process { $null }
@@ -166,7 +169,7 @@ Describe "Optimize-DockerDesktopVHD Script" -Tag "CI" {
       Assert-MockCalled Optimize-VHD -ParameterFilter { $Mode -eq 'Full' } -Scope It
     }
 
-    It "Should not prompt to stop Docker when not running" {
+    It "Should not prompt to stop Docker when not running" -Skip:$script:SkipAll {
       Mock Get-Process { $null } -ParameterFilter { $Name -eq "Docker Desktop" }
       Mock Test-Path { $true }
       Mock Get-Item { [PSCustomObject]@{ Length = 1048576 } }

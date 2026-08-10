@@ -14,7 +14,10 @@ extension export, settings backup, manifest generation, and WhatIf behavior.
 #>
 
 #Requires -Version 5.0
+#Requires -PSEdition Desktop
 #Requires -Module Pester
+
+$script:SkipAll = $PSEdition -eq 'Core'
 
 Describe "Export-VSCodeProfiles.ps1" {
     BeforeAll {
@@ -55,26 +58,26 @@ echo ext2.vscode' -Encoding ASCII
     }
 
     Context "Parameter validation" {
-        It "accepts a custom OutputDirectory" {
+        It "accepts a custom OutputDirectory" -Skip:$script:SkipAll {
             { & $script:ScriptPath -OutputDirectory (Join-Path $script:TestRoot "out") -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -CodeCommand $script:CodePath -WhatIf } | Should -Not -Throw
         }
 
-        It "accepts a custom VSCodeUserDataPath" {
+        It "accepts a custom VSCodeUserDataPath" -Skip:$script:SkipAll {
             { & $script:ScriptPath -OutputDirectory (Join-Path $script:TestRoot "out2") -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -CodeCommand $script:CodePath -WhatIf } | Should -Not -Throw
         }
 
-        It "throws for invalid OutputDirectory characters" {
+        It "throws for invalid OutputDirectory characters" -Skip:$script:SkipAll {
             { & $script:ScriptPath -OutputDirectory "C:\bad|path" -WhatIf } |
                 Should -Throw "*OutputDirectory contains invalid path characters*"
         }
     }
 
     Context "Prerequisite checks" {
-        It "throws when VSCodeUserDataPath does not exist" {
+        It "throws when VSCodeUserDataPath does not exist" -Skip:$script:SkipAll {
             { & $script:ScriptPath -VSCodeUserDataPath "C:\nonexistent\path" -WhatIf } | Should -Throw "VS Code user data directory not found:*"
         }
 
-        It "throws when storage.json is missing" {
+        It "throws when storage.json is missing" -Skip:$script:SkipAll {
             Remove-Item -Path (Join-Path $script:TestRoot "User\globalStorage\storage.json") -Force
             try {
                 { & $script:ScriptPath -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -WhatIf } | Should -Throw "VS Code storage.json not found*"
@@ -84,7 +87,7 @@ echo ext2.vscode' -Encoding ASCII
             }
         }
 
-        It "throws when 'code' CLI is not in PATH" {
+        It "throws when 'code' CLI is not in PATH" -Skip:$script:SkipAll {
             { & $script:ScriptPath -VSCodeUserDataPath (Join-Path $script:TestRoot "User") `
                 -CodeCommand "nonexistent_code_binary_xyz" -WhatIf } |
                 Should -Throw "VS Code CLI*not available*"
@@ -92,7 +95,7 @@ echo ext2.vscode' -Encoding ASCII
     }
 
     Context "Profile discovery" {
-        It "discovers profiles from storage.json" {
+        It "discovers profiles from storage.json" -Skip:$script:SkipAll {
             $outputDir = Join-Path $script:TestRoot "out_discover"
             $output = (& $script:ScriptPath -OutputDirectory $outputDir -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -CodeCommand $script:CodePath -WhatIf 6>&1) | Out-String
 
@@ -102,7 +105,7 @@ echo ext2.vscode' -Encoding ASCII
     }
 
     Context "Extension export" {
-        It "exports extensions and manifest using a custom CodeCommand" {
+        It "exports extensions and manifest using a custom CodeCommand" -Skip:$script:SkipAll {
             $outputDir = Join-Path $script:TestRoot "out_export"
 
             & $script:ScriptPath -OutputDirectory $outputDir -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -CodeCommand $script:CodePath
@@ -115,7 +118,7 @@ echo ext2.vscode' -Encoding ASCII
     }
 
     Context "WhatIf behavior" {
-        It "does not create output files when -WhatIf is specified" {
+        It "does not create output files when -WhatIf is specified" -Skip:$script:SkipAll {
             $outputDir = Join-Path $script:TestRoot "out_whatif"
             { & $script:ScriptPath -OutputDirectory $outputDir -VSCodeUserDataPath (Join-Path $script:TestRoot "User") -CodeCommand $script:CodePath -WhatIf } | Should -Not -Throw
             $outputDir | Should -Not -Exist
