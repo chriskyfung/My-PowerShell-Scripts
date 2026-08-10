@@ -37,6 +37,29 @@ jobs:
         # because Build.ps1 prefers pwsh when it is available.
         run: .\Build.ps1 -PowerShellExecutable powershell
 
+  lint-and-test-ps7:
+    name: Lint & Test (PowerShell 7, ${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [windows-2022, windows-2025]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned PowerShell modules
+        uses: ./.github/actions/setup-powershell-modules
+        with:
+          shell: pwsh
+
+      - name: Run Build (PSScriptAnalyzer + Pester)
+        shell: pwsh
+        # Force the PowerShell Core engine for isolated Pester test processes.
+        run: .\Build.ps1 -PowerShellExecutable pwsh
+
   psscriptanalyzer:
     name: PSScriptAnalyzer SARIF
     runs-on: windows-2025
