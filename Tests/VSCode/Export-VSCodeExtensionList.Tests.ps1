@@ -85,7 +85,7 @@ Describe "Export-VSCodeExtensionList.ps1" {
 
         It "writes a header with generation timestamp and machine name" {
             $content = Get-Content -Path $script:ExpectedOutputFile -Raw
-            $content | Should -Match "VS Code Profile & Extension Export"
+            $content | Should -Match "VS Code Profile and Extension Export"
             $content | Should -Match "Generated:"
             $content | Should -Match "Machine:\s+$env:COMPUTERNAME"
         }

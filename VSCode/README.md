@@ -44,7 +44,7 @@ Exports all VS Code user profiles and their installed extensions to a timestampe
 The script generates a text file named `vscode-profiles-export-YYYY-MM-DD.txt` in your **My Documents** folder by default. You can override this with the `-OutputDirectory` parameter.
 
 ```plaintext
-VS Code Profile & Extension Export
+VS Code Profile and Extension Export
 Generated: 2026-06-01
 Machine:   my-machine
 ==================================================

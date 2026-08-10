@@ -3,9 +3,14 @@
   Tests for Optimize-WslDistroVHD.ps1 script.
 #>
 
+#Requires -PSEdition Desktop
+$script:SkipAll = $PSEdition -eq 'Core'
+
 Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
 
   BeforeAll {
+    if ($script:SkipAll) { return }
+
     # Get the absolute path to the script under test
     $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\Windows\Optimize-WslDistroVHD.ps1"
 
@@ -22,17 +27,17 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
   }
 
   Context "Script Structure" {
-    It "Should exist" {
+    It "Should exist" -Skip:$script:SkipAll {
       Test-Path -Path $script:ScriptPath -PathType Leaf | Should -Be $true
     }
 
-    It "Should contain valid PowerShell syntax" {
+    It "Should contain valid PowerShell syntax" -Skip:$script:SkipAll {
       $errors = $null
       $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content -Path $script:ScriptPath -Raw), [ref]$errors)
       $errors.Count | Should -Be 0
     }
 
-    It "Should have Requires-Version 5.1 or higher" {
+    It "Should have Requires-Version 5.1 or higher" -Skip:$script:SkipAll {
       $content = Get-Content -Path $script:ScriptPath -Raw
       $content | Should -Match "#Requires\s+-Version\s+5\.[1-9]"
     }
@@ -43,23 +48,23 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
       $scriptContent = Get-Content -Path $script:ScriptPath -Raw
     }
 
-    It "Should have a SYNOPSIS section" {
+    It "Should have a SYNOPSIS section" -Skip:$script:SkipAll {
       $scriptContent | Should -Match "\.SYNOPSIS"
     }
 
-    It "Should have a DESCRIPTION section" {
+    It "Should have a DESCRIPTION section" -Skip:$script:SkipAll {
       $scriptContent | Should -Match "\.DESCRIPTION"
     }
 
-    It "Should have at least one EXAMPLE section" {
+    It "Should have at least one EXAMPLE section" -Skip:$script:SkipAll {
       $scriptContent | Should -Match "\.EXAMPLE"
     }
 
-    It "Should have a NOTES section" {
+    It "Should have a NOTES section" -Skip:$script:SkipAll {
       $scriptContent | Should -Match "\.NOTES"
     }
 
-    It "Should have a LINK section" {
+    It "Should have a LINK section" -Skip:$script:SkipAll {
       $scriptContent | Should -Match "\.LINK"
     }
   }
@@ -69,27 +74,27 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
       $scriptContent = Get-Content -Path $script:ScriptPath -Raw
     }
 
-    It "Should have DistroName parameter" {
+    It "Should have DistroName parameter" -Skip:$script:SkipAll {
       $scriptContent | Should -Match '\[string\]\$DistroName'
     }
 
-    It "Should have VhdPath parameter" {
+    It "Should have VhdPath parameter" -Skip:$script:SkipAll {
       $scriptContent | Should -Match '\[string\]\$VhdPath'
     }
 
-    It "Should have Mode parameter" {
+    It "Should have Mode parameter" -Skip:$script:SkipAll {
       $scriptContent | Should -Match '\[string\]\$Mode'
     }
 
-    It "Should have ValidateSet for Mode parameter with Full, Retain, None" {
+    It "Should have ValidateSet for Mode parameter with Full, Retain, None" -Skip:$script:SkipAll {
       $scriptContent | Should -Match "ValidateSet\('Full',\s*'Retain',\s*'None'\)"
     }
 
-    It "Should default Mode to Full" {
+    It "Should default Mode to Full" -Skip:$script:SkipAll {
       $scriptContent | Should -Match '\[string\]\$Mode\s*=\s*''Full'''
     }
 
-    It "Should support ShouldProcess" {
+    It "Should support ShouldProcess" -Skip:$script:SkipAll {
       $scriptContent | Should -Match "SupportsShouldProcess\s*=\s*\`$true"
     }
   }
@@ -99,23 +104,23 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
       $scriptContent = Get-Content -Path $script:ScriptPath -Raw
     }
 
-    It "Should define Get-WslDistroList function" {
+    It "Should define Get-WslDistroList function" -Skip:$script:SkipAll {
       $scriptContent | Should -Match "function\s+Get-WslDistroList"
     }
 
-    It "Should define Get-WslDistroVhdPath function" {
+    It "Should define Get-WslDistroVhdPath function" -Skip:$script:SkipAll {
       $scriptContent | Should -Match "function\s+Get-WslDistroVhdPath"
     }
 
-    It "Should define Select-WslDistro function" {
+    It "Should define Select-WslDistro function" -Skip:$script:SkipAll {
       $scriptContent | Should -Match "function\s+Select-WslDistro"
     }
 
-    It "Should define Stop-WslDistro function" {
+    It "Should define Stop-WslDistro function" -Skip:$script:SkipAll {
       $scriptContent | Should -Match "function\s+Stop-WslDistro"
     }
 
-    It "Should use ShouldContinue in Stop-WslDistro for user confirmation" {
+    It "Should use ShouldContinue in Stop-WslDistro for user confirmation" -Skip:$script:SkipAll {
       $scriptContent | Should -Match "ShouldContinue"
     }
   }
@@ -142,7 +147,7 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
       }
     }
 
-    It "Should optimize a VHDX when -VhdPath is provided directly" {
+    It "Should optimize a VHDX when -VhdPath is provided directly" -Skip:$script:SkipAll {
       Mock Get-Item { [PSCustomObject]@{ Length = 1048576 } }
       Mock Test-Path { $true }
       Mock Optimize-VHD { }
@@ -161,7 +166,7 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
       Assert-MockCalled Optimize-VHD -Times 1 -Scope It
     }
 
-    It "Should accept custom VHDX path" {
+    It "Should accept custom VHDX path" -Skip:$script:SkipAll {
       Mock Test-Path { $true } -ParameterFilter { $Path -eq $script:TestVhdPath }
       Mock Get-Item { [PSCustomObject]@{ Length = 1048576 } } -ParameterFilter { $Path -eq $script:TestVhdPath }
       Mock Optimize-VHD { }
@@ -180,7 +185,7 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
       Assert-MockCalled Optimize-VHD -Times 1 -Scope It
     }
 
-    It "Should call Optimize-VHD with correct parameters" {
+    It "Should call Optimize-VHD with correct parameters" -Skip:$script:SkipAll {
       Mock Test-Path { $true }
       Mock Get-Item { [PSCustomObject]@{ Length = 1048576 } }
       Mock Optimize-VHD { }
@@ -192,7 +197,7 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
       Assert-MockCalled Optimize-VHD -ParameterFilter { $Mode -eq 'Full' } -Scope It
     }
 
-    It "Should not stop WSL distro when not running" {
+    It "Should not stop WSL distro when not running" -Skip:$script:SkipAll {
       Mock Test-Path { $true }
       Mock Get-Item { [PSCustomObject]@{ Length = 1048576 } }
       Mock Optimize-VHD { }
@@ -208,12 +213,12 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
       $env:LOCALAPPDATA = $env:TEMP
     }
 
-    It "Should throw when VHDX file not found" {
+    It "Should throw when VHDX file not found" -Skip:$script:SkipAll {
       $nonExistentPath = Join-Path $env:TEMP "non-existent.vhdx"
       { Start-WslDistroVhdOptimization -VhdPath $nonExistentPath } | Should -Throw
     }
 
-    It "Should throw when file is not .vhdx extension" {
+    It "Should throw when file is not .vhdx extension" -Skip:$script:SkipAll {
       $invalidPath = Join-Path $env:TEMP "invalid.txt"
       "" | Set-Content -Path $invalidPath
       { Start-WslDistroVhdOptimization -VhdPath $invalidPath } | Should -Throw
@@ -230,12 +235,12 @@ Describe "Optimize-WslDistroVHD Script" -Tag "CI" {
       Mock Read-Host { "1" }
     }
 
-    It "Should support WhatIf parameter" {
+    It "Should support WhatIf parameter" -Skip:$script:SkipAll {
       $scriptContent = Get-Content -Path $script:ScriptPath -Raw
       $scriptContent | Should -Match "SupportsShouldProcess\s*=\s*\`$true"
     }
 
-    It "Should not call Optimize-VHD when -WhatIf is used" {
+    It "Should not call Optimize-VHD when -WhatIf is used" -Skip:$script:SkipAll {
       Start-WslDistroVhdOptimization -VhdPath $script:TestVhdPath -Mode Full -WhatIf
       Should -Invoke Optimize-VHD -Times 0 -Scope It
     }

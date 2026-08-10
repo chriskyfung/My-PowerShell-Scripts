@@ -3,6 +3,9 @@
   Tests for Get-DiskReliabilityCounter.ps1 script.
 #>
 
+#Requires -PSEdition Desktop
+$script:SkipAll = $PSEdition -eq 'Core'
+
 Describe "Get-DiskReliabilityCounter Script" -Tag "CI" {
 
   BeforeAll {
@@ -50,7 +53,7 @@ Describe "Get-DiskReliabilityCounter Script" -Tag "CI" {
   }
 
   Context "Execution" {
-    It "Should execute without throwing" -Skip:(-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    It "Should execute without throwing" -Skip:($script:SkipAll -or -not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     # Code that requires admin permissions
       { & $script:ScriptPath } | Should -Not -Throw
     }

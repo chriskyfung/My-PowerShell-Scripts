@@ -10,15 +10,30 @@
   PS C:\> .\Build.ps1
   Runs all Pester tests and analyzes all PowerShell scripts in the project.
 
+.EXAMPLE
+  PS C:\> .\Build.ps1 -PowerShellExecutable pwsh
+  Forces the PowerShell Core engine (pwsh) for isolated Pester test processes.
+
+.EXAMPLE
+  PS C:\> .\Build.ps1 -PowerShellExecutable powershell
+  Forces the Windows PowerShell 5.1 engine (powershell.exe) for isolated Pester test processes.
+
+.PARAMETER PowerShellExecutable
+  The PowerShell engine to use for isolated Pester test processes.
+  Valid values: 'auto' (default, picks pwsh if available, otherwise powershell), 'pwsh', or 'powershell'.
+
 .NOTES
-  Version:        1.1.0
+  Version:        1.2.0
   Author:         chriskyfung, Gemini
   License:        GNU GPLv3 license
   Creation Date:  2025-08-02
-  Last Modified:  2025-09-08
+  Last Modified:  2026-08-07
 #>
 
-param()
+param(
+    [ValidateSet('auto', 'pwsh', 'powershell')]
+    [string]$PowerShellExecutable = 'auto'
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -42,15 +57,30 @@ try {
 
   # Determine the correct PowerShell executable to use for isolated processes
   $executable = ''
-  if (Get-Command -Name 'pwsh' -ErrorAction SilentlyContinue) {
+  if ($PowerShellExecutable -eq 'pwsh') {
+      if (Get-Command -Name 'pwsh' -ErrorAction SilentlyContinue) {
+          $executable = 'pwsh'
+      }
+      else {
+          throw "Requested 'pwsh' for isolated Pester tests, but it is not available."
+      }
+  }
+  elseif ($PowerShellExecutable -eq 'powershell') {
+      if (Get-Command -Name 'powershell' -ErrorAction SilentlyContinue) {
+          $executable = 'powershell'
+      }
+      else {
+          throw "Requested 'powershell' for isolated Pester tests, but it is not available."
+      }
+  }
+  elseif (Get-Command -Name 'pwsh' -ErrorAction SilentlyContinue) {
       $executable = 'pwsh'
   }
   elseif (Get-Command -Name 'powershell' -ErrorAction SilentlyContinue) {
       $executable = 'powershell'
   }
   else {
-      Write-Error "Could not find 'pwsh' or 'powershell' executable to run isolated Pester tests."
-      exit 1
+      throw "Could not find 'pwsh' or 'powershell' executable to run isolated Pester tests."
   }
   Write-Host "Using '$executable' for isolated test execution."
 
@@ -80,8 +110,7 @@ try {
       }
 
       if ($overallResult.FailedCount -gt 0) {
-        Write-Error "$($overallResult.FailedCount) test file(s) contained failures."
-        exit 1
+        throw "$($overallResult.FailedCount) test file(s) contained failures."
       }
   }
   else {

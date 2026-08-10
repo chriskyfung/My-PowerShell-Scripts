@@ -10,10 +10,9 @@
 # Version: 1.0.0
 #
 
-BeforeAll {
-  # Resolve full paths to the scripts at the start
-  $script:ScriptPath = Resolve-Path -Path "$PSScriptRoot/../../theBrain/Open-TheBrainNodeFolder.ps1"
-  $script:GetDataDirectoryScriptPath = Resolve-Path -Path "$PSScriptRoot/../../theBrain/Get-TheBrainDataDirectory.ps1"
+  BeforeAll {
+    # Resolve full paths to the scripts at the start
+    $script:ScriptPath = Resolve-Path -Path "$PSScriptRoot/../../theBrain/Open-TheBrainNodeFolder.ps1"
 
   # Create a temporary directory to simulate TheBrain's data folder structure
   $script:TempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "Test-OpenTheBrainNode")
@@ -38,12 +37,6 @@ AfterAll {
 
 Describe "Open-TheBrainNodeFolder.ps1" {
   BeforeEach {
-    # Mock the Get-TheBrainDataDirectory.ps1 script to return our temp path.
-    # This is the correct Pester v5 syntax for mocking a script that is dot-sourced.
-    Mock $script:GetDataDirectoryScriptPath {
-      return $script:fakeBrainDataDir
-    } -Verifiable
-
     # Mock explorer.exe to prevent it from actually opening a window
     Mock explorer.exe {
       # This space intentionally left blank
@@ -62,7 +55,7 @@ Describe "Open-TheBrainNodeFolder.ps1" {
       Mock Get-ChildItem { return @(Get-Item $script:fakeNodeFolderPath) } -Verifiable
 
       # Run the script with the NodeId of the folder we created
-      . $script:ScriptPath -NodeId $script:fakeNodeId
+      . $script:ScriptPath -NodeId $script:fakeNodeId -DataDirectory $script:fakeBrainDataDir
 
       # Verify that explorer.exe was called exactly once with the correct full path
       Should -Invoke "explorer.exe" -Times 1 -Exactly -ParameterFilter { $script:fakeNodeFolderPath }
@@ -76,7 +69,7 @@ Describe "Open-TheBrainNodeFolder.ps1" {
       $nonExistentNodeId = "xyz-789-uvw-101"
 
       # Run the script with a NodeId that does not correspond to any folder
-      . $script:ScriptPath -NodeId $nonExistentNodeId
+      . $script:ScriptPath -NodeId $nonExistentNodeId -DataDirectory $script:fakeBrainDataDir
 
       # Verify that Write-Warning was called exactly once
       Should -Invoke "Write-Warning" -Exactly 1
@@ -89,19 +82,15 @@ Describe "Open-TheBrainNodeFolder.ps1" {
   }
 
   Context "when an error occurs" {
-    It "should call Write-Error when Get-TheBrainDataDirectory fails" {
-      # Mock Get-Module to simulate that PSSQLite is not found, causing Get-TheBrainDataDirectory to fail
-      Mock Get-Module {
-        throw "Failed to find TheBrain data directory"
-      } -ParameterFilter {
-        $Name -eq "PSSQLite"
-      } -Verifiable
+    It "should call Write-Error when Get-ChildItem fails" {
+      # Mock Get-ChildItem to throw an exception to simulate an error
+      Mock Get-ChildItem { throw "Simulated Get-ChildItem error" } -Verifiable
 
       # Mock Write-Error to verify it's called
       Mock Write-Error
 
       # Run the script. The script's try/catch should handle the error and not throw.
-      { . $script:ScriptPath -NodeId $script:fakeNodeId } | Should -Not -Throw
+      { . $script:ScriptPath -NodeId $script:fakeNodeId -DataDirectory $script:fakeBrainDataDir } | Should -Not -Throw
 
       # Verify that Write-Error was called because the catch block should execute
       Should -Invoke "Write-Error" -Times 1 -Exactly
@@ -114,7 +103,7 @@ Describe "Open-TheBrainNodeFolder.ps1" {
       $invalidNodeId = "node-id-with-@!#"
 
       # Expect a ParameterBindingValidationException because the input does not match the pattern
-      { . $script:ScriptPath -NodeId $invalidNodeId } | Should -Throw -ExceptionType ([System.Management.Automation.ParameterBindingException])
+      { . $script:ScriptPath -NodeId $invalidNodeId -DataDirectory $script:fakeBrainDataDir } | Should -Throw -ExceptionType ([System.Management.Automation.ParameterBindingException])
     }
   }
 }

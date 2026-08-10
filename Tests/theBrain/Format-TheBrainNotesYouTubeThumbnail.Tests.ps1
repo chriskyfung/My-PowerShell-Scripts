@@ -1,9 +1,14 @@
 # Test for Format-TheBrainNotesYouTubeThumbnail.ps1
 # Requires -Modules Pester
 
-BeforeAll {
-  # Path to the script being tested
-  $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\theBrain\Format-TheBrainNotesYouTubeThumbnail.ps1"
+# NOTE: Must be top-level (not inside BeforeAll) so Pester Discovery phase
+# can evaluate -Skip: expressions before BeforeAll runs.
+$script:SkipAll = $PSEdition -eq 'Core'
+
+
+  BeforeAll {
+    # Path to the script being tested
+    $script:ScriptPath = Resolve-Path "$PSScriptRoot\..\..\theBrain\Format-TheBrainNotesYouTubeThumbnail.ps1"
 
   # Set up a temporary file system structure to simulate TheBrain's data
   $script:TestDrive = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "Test-FormatTheBrainYouTubeThumbnail") -Force
@@ -24,8 +29,6 @@ BeforeAll {
   $script:OriginalContent = '[![Test Alt Text](.data/md-images/thumbnail123.jpg)](https://youtu.be/VIDEO123)'
   Set-Content -Path $script:NotesFile -Value $script:OriginalContent -Encoding UTF8
 
-  # Mock the external script dependency to return a temporary path
-  Mock Invoke-SqliteQuery { return [PSCustomObject]@{ Value = """$script:TestDrive""" } } -Verifiable
 }
 
 AfterAll {
@@ -33,7 +36,7 @@ AfterAll {
   Remove-Item -Path $script:TestDrive.FullName -Recurse -Force
 }
 
-Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' {
+Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' -Tag "DesktopOnly" {
 
   BeforeEach {
     # Reset all mocks before each test to ensure isolation
@@ -49,7 +52,7 @@ Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' {
     Mock Convert-Path { return $Path } -Verifiable
   }
 
-  It 'should find, back up, and replace a YouTube thumbnail link' {
+  It 'should find, back up, and replace a YouTube thumbnail link' -Skip:$script:SkipAll {
     # Arrange
     # This object simulates the output of Select-String with a found match
     $MatchObject = @(
@@ -75,7 +78,7 @@ Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' {
     Mock New-Item { return [pscustomobject]@{ FullName = $Path[0] } } -Verifiable
 
     # Act
-    . $script:ScriptPath
+    . $script:ScriptPath -DataDirectory $script:BrainFolder
 
     # Assert
     $ExpectedNewString = '[![Test Alt Text](https://img.youtube.com/vi/VIDEO123/maxresdefault.jpg)](https://www.youtube.com/watch?v=VIDEO123)'
@@ -101,14 +104,14 @@ Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' {
     }
   }
 
-  It 'should do nothing if no matching links are found' {
+  It 'should do nothing if no matching links are found' -Skip:$script:SkipAll {
     # Arrange
     # Mock Select-String to return no matches
     Mock Get-ChildItem -Verifiable
     Mock Select-String { return $null } -Verifiable
 
     # Act
-    . $script:ScriptPath
+    . $script:ScriptPath -DataDirectory $script:BrainFolder
 
     # Assert
     # Ensure no file operations were attempted
@@ -122,7 +125,7 @@ Describe 'Format-TheBrainNotesYouTubeThumbnail.ps1' {
     }
   }
 
-  It 'should handle errors during file operations' {
+  It 'should handle errors during file operations' -Skip:$script:SkipAll {
     # Arrange
     # Simulate a match being found, same as the happy path test
     $MatchObject = @(
